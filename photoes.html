@@ -1,66 +1,56 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Фоточки</title>
-    <script type="text/javascript" src="JS/jquery.js"></script>
-    <script type="text/javascript" src="JS/jquery.cross-slide.js"></script>
-    <script type="text/javascript">
-        $(function() {
-        $('#gallery').crossSlide({ sleep: 2, fade: 1
-        }, [
-        { src: 'img/2.jpg' },
-        { src: 'img/1.jpg' },
-        { src: 'img/3.jpg' },
-        { src: 'img/5.jpg' },
-        { src: 'img/4.jpg' }
-        ]);
-        });
-    </script>
-    <style type="text/css"> 
-        #gallery {
-            margin: 1em auto;
-            border: 2px solid #000000; 
-            width: 600px;
-            height: 500px;
-        }
-        
-        #gallery img {
-            width: 100%;
-            height: 100%;
-            object-fit: fill; 
-        }
-    </style>
-</head>
-<body>
+    <head>
+        <meta charset="UTF-8">
+        <title>Фоточки</title>
+        <link rel="stylesheet" href="CSS/photoes.css">
+        <script type="text/javascript" src="JS/jquery.js"></script>
+        <script type="text/javascript" src="JS/jquery.cross-slide.js"></script>
+        <script type="text/javascript">
+            $(function() {
+            $('#gallery').crossSlide({ sleep: 2, fade: 1
+            }, [
+            { src: 'img/2.jpg' },
+            { src: 'img/1.jpg' },
+            { src: 'img/3.jpg' },
+            { src: 'img/5.jpg' },
+            { src: 'img/4.jpg' }
+            ]);
+            });
+        </script>
+        <style type="text/css"> 
+            #gallery {
+                margin: 1em auto;
+                border: 2px solid #000000; 
+                width: 600px;
+                height: 500px;
+            }
+            
+            #gallery img {
+                width: 100%;
+                height: 100%;
+                object-fit: fill; 
+            }
+        </style>
+    </head>
+    <body>
 
-    <header>
-        
-        <h3 id="0"><a href="index.html">на главную</a></h3>
-        <hr>
+        <header>
+            <h3 id="0"><a href="index.html">на главную</a></h3>
+        </header>
 
-    </header>
-    <main>
-
-        <div align="center" id="gallery">
-        Если изображения не видно, обновите страницу
-        </div>
-
-        <hr>
-        <br>
-        <img src="img/2.jpg" width="100%">
-        <img src="img/1.jpg" width="100%">
-        <img src="img/3.jpg" width="100%">
-        <img src="img/4.jpg" width="100%">
-        <img src="img/5.jpg" width="100%">
-        
-    </main>
-
-    <footer>
-    <br>
-    <hr>
-    <h3><a href="#0">в начало</a></h3>
-    </footer>
-
-</body>
+        <main>
+            <div style="text-align: center;" id="gallery">
+                Если изображения не видно, обновите страницу
+            </div>
+            <hr style=" border: none; border-top: 1px solid #000000; margin: 0 5% 0px 5%;">
+            <br>
+            <img src="img/2.jpg">
+            <img src="img/1.jpg">
+            <img src="img/3.jpg">
+            <img src="img/4.jpg">
+            <img src="img/5.jpg">
+        </main>
+    
+    </body>
 </html>

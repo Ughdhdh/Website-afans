@@ -4,6 +4,12 @@
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: 'HomeVideo';
+  src: url('fonts/HomeVideo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 
 
@@ -11,6 +17,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-size: 1rem;
+  font-family: Segoe UI;
 }
 
 body {
@@ -49,8 +57,17 @@ main {
     text-align: center;
 }
 
+.sponsors img {
+    transition: transform 0.5s ease;
+    display: inline-block;
+}
+
+.sponsors img:hover {
+    transform: scale(1.1);
+}
+
 footer {
-  margin: 5% 5% 2% 5%;
+  margin: 5% 5% 0% 5%;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -122,7 +139,22 @@ dl dd {
   font-weight: normal;
 }
 
+h1 {
+  font-size: 4rem;
+  font-family: HomeVideo;
+  line-height: 0.5; 
+}
+
+.fan {
+  font-size: 2rem;
+  font-family: HomeVideo;
+  line-height: 1; 
+}
+
 h2 {
   padding-left: 10px;
   margin-bottom: 5px;
+  margin-top: -20px;
+  font-size: 1.2rem;
+  font-family: Pixeled;
 }

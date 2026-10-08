@@ -1,0 +1,55 @@
+@font-face {
+  font-family: 'Pixeled';
+  src: url('fonts/Pixeled.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'HomeVideo';
+  src: url('fonts/HomeVideo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-family: Segoe UI;
+}
+
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr; 
+  grid-template-areas: 
+        "head"
+        "cont";
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+header { grid-area: head; }
+main { grid-area: cont; }
+
+header {
+    margin: 0 5% 0px 5%;
+    border-bottom: 1px solid #000000; 
+}
+
+main {
+    overflow-y: auto;
+}
+
+main img {
+    width: 100%;
+}
+
+h3 a {
+  padding-left: 25px;
+  font-size: 1.2rem;
+  font-family: Pixeled;
+}
