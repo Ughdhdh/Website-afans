@@ -1,0 +1,128 @@
+@font-face {
+  font-family: 'Pixeled';
+  src: url('fonts/Pixeled.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto; 
+  grid-template-areas: 
+        "head"
+        "nav"
+        "cont"
+        "foo";
+  overflow: hidden;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+header { grid-area: head; }
+nav { grid-area: nav; }
+main { grid-area: cont; }
+footer { grid-area: foo; }
+
+nav {
+  display: flex;
+  flex-direction: row;
+  margin: 1% 3% 1.5% 3%;
+  gap: 0.67%;
+}
+
+main {
+  overflow-y: auto;
+  margin: 0% 3% 0% 3%;
+  border-top: 1px solid #000000; 
+}
+
+.sponsors {
+    text-align: center;
+}
+
+footer {
+  margin: 5% 5% 2% 5%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2%;
+  padding: 20px 0;
+  border-top: 1px solid #000000; 
+}
+
+.footer-block {
+  flex: 1;
+}
+/* Для узкого рахрешения экрана */
+@media (max-width: 600px) {
+  .navigation {
+    flex-direction: column; /* Кнопки встают друг под друга */
+    gap: 2px;
+  }
+  .button {
+    font-size: 0.8rem; /* Дополнительно уменьшаем шрифт на смартфонах */
+    padding: 12px 5px;
+  }
+}
+
+
+
+/* Стили кнопок */
+.button {
+  flex: 1;
+  font-family: 'Pixeled', monospace;
+  font-size: 1rem;
+  text-align: center;
+  color: #ffffff;
+  background-color: #163a19;
+  padding: 2px 20px 10px 20px; 
+  cursor: pointer;
+  text-transform: uppercase;
+  border: none;
+  white-space: nowrap; 
+  text-decoration: none;
+  transition: background-color 0.5s ease;
+}
+/* Эффект при наведении курсора */
+.button:hover {
+  background-color: #176e5b;  
+}
+
+
+
+ol {
+  padding-left: 40px;
+  margin-bottom: 20px;
+}
+
+ul {
+  padding-left: 40px;
+  margin-bottom: 20px;
+}
+
+dl {
+  padding-left: 25px;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+dl dd {
+  padding-left: 30px;
+  margin-bottom: 20px;
+  font-weight: normal;
+}
+
+h2 {
+  padding-left: 10px;
+  margin-bottom: 5px;
+}

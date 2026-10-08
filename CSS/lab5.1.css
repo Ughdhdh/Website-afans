@@ -1,0 +1,13 @@
+h3{
+    margin: 0px 50px 100px 50px;
+    padding: 50px;
+    border: 10px solid #2222a7;
+    background-color: #e7f6fc;
+}
+
+p {
+    margin: 30px 150px 50px 150px;
+    padding: 30px;
+    border: 10px solid #bb1438;
+    background-color: #ffc6d9;
+}

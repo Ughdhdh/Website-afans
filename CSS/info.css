@@ -1,0 +1,9 @@
+body {
+    background-image: url('../img/back.jpg'); 
+    background-size: 25% auto;
+    background-repeat: repeat; 
+    background-position: center; 
+    background-attachment: fixed; 
+    margin-left: 5%;
+    margin-right: 5%;
+}

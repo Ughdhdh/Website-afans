@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+    <head>
+        <title>Форма</title>
+    </head>
+    <body>
+        <form action="">
+            <table border="1" cellpadding="5">
+            <caption align="left">
+                <b> Анкета web-разработчика </b>
+            </caption>
+            <tr>
+                <td>E-mail*</td>
+                <td><input required type="email" name="email"></td>
+            </tr>
+            <tr>
+                <td>Пароль*</td>
+                <td><input required type="password" name="pass"></td>
+            </tr>
+            <tr>
+            <td>Пол</td>
+                <td>
+                <input type="radio" name="gender" id="g1" val- ue="1">
+                <label for="g1">Мужчина</label>
+                <input type="radio" name="gender" id="g2" val- ue="2">
+                <label for="g2">Женщина</label>
+                </td>
+            </tr>
+            <tr>
+                <td>Год рождения</td>
+                <td>
+                    <select name="year" size="1">
+                    <option value="1984" selected>1984</option>
+                    <option value="1985">1985</option>
+                    <option value="1986">1986</option>
+                    <option value="1987">1987</option>
+                    <option value="1988">1988</option>
+                    <option value="1989">1989</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Знание языков</td>
+                <td>
+                    <input type="checkbox" name="languadg" val- ue="Inglish" checked>Английский<br>
+                    <input type="checkbox" name="languadg" val- ue="Rushen">Русский<br>
+                    <input type="checkbox" name="languadg" val- ue="Doich" checked>Немецкий<br>
+                    <input type="checkbox" name="languadg" val- ue="Spain">Испанский<br>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                
+                <textarea name="description" cols="40" rows="10">Коротко о себе...	</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input type="submit" value="Отправить">
+                    <button type="reset">Сбросить</button>
+                </td>
+            </tr>
+            </table>
+        </form>
+    </body>
+</html>
