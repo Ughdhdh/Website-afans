@@ -1,3 +1,212 @@
+@font-face {
+  font-family: 'Pixeled';
+  src: url('fonts/Pixeled.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'HomeVideo';
+  src: url('fonts/HomeVideo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+
+* {
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;;
+}
+
 body {
-    justify-items: center;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  max-width: 1000px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+header { grid-area: head; }
+main { grid-area: cont; }
+
+header {
+    margin: 0 5% 0px 5%;
+    max-width: 30%;
+}
+
+main {
+  overflow-y: auto;
+  margin: 0% 3% 0% 3%; 
+  padding-left: 2%;
+  padding-right: 2%;
+}
+
+h3 a {
+  padding-left: 25px;
+  font-size: 1.2rem;
+  font-family: Pixeled;
+}
+
+h2 {
+  padding-left: 25px;
+  font-size: 1.2rem;
+  font-family: Pixeled;
+}
+
+a {
+  padding-left: 25px;
+  font-size: 0.7rem;
+  font-family: Pixeled;
+}
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+
+
+/* Стилизация самой таблицы */
+.form-table {
+  border-collapse: collapse; 
+  background: #ffffff;
+  max-width: 650px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+/* Заголовок таблицы */
+.form-table caption {
+  font-size: 22px;
+  font-weight: bold;
+  color: #000000;
+  padding-bottom: 15px;
+}
+
+/* Общие стили для всех ячеек */
+.form-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #bcc2c9;
+  vertical-align: middle;
+}
+
+/* Левая колонка с названиями полей */
+.label-cell {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+  width: 35%;
+  background-color: #f8fafc;
+}
+
+/* Стили для текстовых инпутов */
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, textarea:focus {
+  border-color: #163a19;
+}
+
+/* Особый стиль для поля цвета */
+input[type="color"] {
+  width: 60px;
+  height: 35px;
+  padding: 2px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Пол, Языки (выравнивание чекбоксов и радио) */
+.options-cell label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #163a19;
+  cursor: pointer;
+}
+
+.options-cell input {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Компактное отображение языков в две колонки */
+.languages-grid {
+  columns: 2;
+}
+
+/* Ячейка с textarea */
+.textarea-cell {
+  background-color: #f8fafc;
+}
+textarea {
+  resize: vertical;
+}
+
+/* Нижняя ячейка с кнопками */
+.buttons-cell {
+  text-align: center;
+  background-color: #f1f5f9;
+  padding: 16px !important;
+}
+
+/* Кнопки */
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin: 0 5px;
+}
+
+.btn-submit {
+  background-color: #176e5b;
+  color: white;
+}
+
+.btn-submit:hover {
+  background-color: #163a19;
+}
+
+.btn-reset {
+  background-color: #e2e8f0;
+  color: #4a5568;
+}
+
+.btn-reset:hover {
+  background-color: #cbd5e1;
+}
+/* цвет чекбоксов, радиокнопок и слайдера */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: #176e5b;
+}
+
+input[type="range"] {
+  width: 100%;
+  vertical-align: middle;
 }

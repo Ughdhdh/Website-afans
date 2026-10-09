@@ -6,4 +6,12 @@ body {
     background-attachment: fixed; 
     margin-left: 5%;
     margin-right: 5%;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }

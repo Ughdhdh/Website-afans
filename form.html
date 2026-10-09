@@ -5,76 +5,83 @@
         <link rel="stylesheet" href="CSS/form.css">
     </head>
     <body>
-        <h2>Для вступления заполните форму</h2>
-        <form action="">
-            <table border="1" cellpadding="5">
-            <caption>
-                <b> Анкета участника </b>
-            </caption>
-            <tr>
-                <td>E-mail*</td>
-                <td><input required type="email" name="email"></td>
-            </tr>
-            <tr>
-                <td>Пароль*</td>
-                <td><input required type="password" name="pass"></td>
-            </tr>
-            <tr>
-            <td>Пол</td>
-                <td>
-                <input type="radio" name="gender" id="g1" val- ue="1">
-                <label for="g1">Мужчина</label>
-                <input type="radio" name="gender" id="g2" val- ue="2">
-                <label for="g2">Женщина</label>
-                </td>
-            </tr>
-            <tr>
-                <td>Год рождения</td>
-                <td>
-                    <select name="year" size="1">
-                    <option value="1983">1999</option>
-                    <option value="1984">2000</option>
-                    <option value="1985">2001</option>
-                    <option value="1986">2002</option>
-                    <option value="1987">2003</option>
-                    <option value="1988">2004</option>
-                    <option value="1989">2005</option>
-                    <option value="1990">2006</option>
-                    <option value="1991">2007</option>
-                    <option value="1992" selected>2008</option>
-                    <option value="1993">2009</option>
-                    <option value="1994">2010</option>
-                    <option value="1995">2011</option>
-                    <option value="1996">2012</option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>Знание языков</td>
-                <td>
-                    <input type="checkbox" name="languadg" val- ue="Inglish">Английский<br>
-                    <input type="checkbox" name="languadg" val- ue="Rushen" checked>Русский<br>
-                    <input type="checkbox" name="languadg" val- ue="Doich">Немецкий<br>
-                    <input type="checkbox" name="languadg" val- ue="Spain">Испанский<br>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                
-                <textarea name="description" cols="40" rows="10">Коротко о себе...	</textarea>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="submit" value="Отправить">
-                    <button type="reset">Сбросить</button>
-                </td>
-            </tr>
-            </table>
-        </form>
-        <footer>
-            <hr>
+        <header>
+            <h2>Для вступления заполните форму</h2>
             <h3 id="0"><a href="index.html">на главную</a></h3>
-        </footer>
+        </header>
+        <main>
+            <br>
+            <form action="#" method="POST">
+                <table class="form-table">
+                    <caption>
+                    <b>Анкета участника</b>
+                    </caption>
+                    <tr>
+                    <td class="label-cell"><label for="email">E-mail*</label></td>
+                    <td><input required type="email" name="email" id="email" placeholder="example@mail.com"></td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="pass">Пароль*</label></td>
+                    <td><input required type="password" name="pass" id="pass" placeholder="Введите пароль"></td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell">Пол</td>
+                    <td class="options-cell">
+                        <label><input type="radio" name="gender" value="1"> Мужчина</label>
+                        <label><input type="radio" name="gender" value="2"> Женщина</label>
+                        <label><input type="radio" name="gender" value="3"> Небинарность</label>
+                    </td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="birthdate">Дата рождения</label></td>
+                    <td>
+                        <input type="date" name="birthdate" id="birthdate">
+                    </td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="color">Любимый цвет</label></td>
+                    <td>
+                        <input type="color" name="favorite_color" id="color">
+                    </td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="number">Любимое число</label></td>
+                    <td>
+                        <input type="number" name="favorite_number" id="number" min="0">
+                    </td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="range">Насколько любите Р.А.С.</label></td>
+                    <td>
+                        <input type="range" name="love_ras" id="range" min="0" max="10">
+                    </td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell">Знание языков</td>
+                    <td class="options-cell languages-grid">
+                        <label><input type="checkbox" name="language" value="en"> Английский</label>
+                        <label><input type="checkbox" name="language" value="ru" checked> Русский</label>
+                        <label><input type="checkbox" name="language" value="de"> Немецкий</label>
+                        <label><input type="checkbox" name="language" value="es"> Испанский</label>
+                        <label><input type="checkbox" name="language" value="fr"> Французский</label>
+                        <label><input type="checkbox" name="language" value="zh"> Китайский</label>
+                        <label><input type="checkbox" name="language" value="other"> Другое</label>
+                    </td>
+                    </tr>
+                    <tr>
+                    <td colspan="2" class="textarea-cell">
+                        <label for="description" style="display:block; margin-bottom: 8px;">Коротко о себе:</label>
+                        <textarea name="description" id="description" rows="6" placeholder="Коротко о себе..."></textarea>
+                    </td>
+                    </tr>
+                    <tr>
+                    <td colspan="2" class="buttons-cell">
+                        <button type="submit" class="btn btn-submit">Отправить</button>
+                        <button type="reset" class="btn btn-reset">Сбросить</button>
+                    </td>
+                    </tr>
+                </table>
+            </form>
+        </main>
     </body>
 </html>

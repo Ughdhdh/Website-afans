@@ -17,8 +17,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-size: 1rem;
-  font-family: Segoe UI;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -43,7 +42,7 @@ footer { grid-area: foo; }
 nav {
   display: flex;
   flex-direction: row;
-  margin: 1% 3% 1.5% 3%;
+  margin: 1% 3% 1% 3%;
   gap: 0.67%;
 }
 
@@ -67,19 +66,32 @@ main {
 }
 
 footer {
-  margin: 5% 5% 0% 5%;
+  margin: 0% 5% 0% 5%;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 2%;
-  padding: 20px 0;
+  padding: 1% 0;
   border-top: 1px solid #000000; 
 }
 
 .footer-block {
-  flex: 1;
+  flex: 1 0 30%; 
 }
+
+/* Центральный блок */
+.footer-block:nth-child(2) {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+/* Правый блок */
+.footer-block:nth-child(3) {
+  text-align: right;
+  display: flex;
+}
+
 /* Для узкого рахрешения экрана */
 @media (max-width: 600px) {
   .navigation {
@@ -112,7 +124,8 @@ footer {
 }
 /* Эффект при наведении курсора */
 .button:hover {
-  background-color: #176e5b;  
+  background-color: #176e5b;
+  text-decoration: none;
 }
 
 
@@ -157,4 +170,11 @@ h2 {
   margin-top: -20px;
   font-size: 1.2rem;
   font-family: Pixeled;
+}
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }

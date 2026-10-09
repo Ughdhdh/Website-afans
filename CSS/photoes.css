@@ -22,6 +22,7 @@
 }
 
 body {
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
   height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr; 
@@ -52,4 +53,11 @@ h3 a {
   padding-left: 25px;
   font-size: 1.2rem;
   font-family: Pixeled;
+}
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }
