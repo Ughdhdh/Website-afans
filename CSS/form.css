@@ -38,9 +38,11 @@ header {
 }
 
 main {
-  overflow-y: auto;
+  overflow-y: scroll;
   margin: 5% 3% 5% 3%; 
   padding-left: 2%;
+  padding-bottom: 2%;
+  padding-top: 2%;
   padding-right: 2%;
 }
 

@@ -18,7 +18,7 @@
   padding: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  font-family: Segoe UI;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -32,7 +32,7 @@ body {
   overflow: hidden;
   max-width: 1000px;
   margin: 0 auto;
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+
 }
 
 header { grid-area: head; }
