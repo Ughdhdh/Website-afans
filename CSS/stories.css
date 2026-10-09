@@ -82,3 +82,42 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* Телефоны и узкие экраны */
+@media (max-width: 700px) {
+  body {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  main {
+    overflow-y: visible;
+    margin: 0 3%;
+    padding: 0;
+  }
+  nav {
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 8px 3%;
+  }
+  nav h2 {
+    padding: 0 12px 0 0 !important;
+  }
+  nav span {
+    padding: 0 !important;
+  }
+  a, h3 a {
+    padding-left: 0;
+    margin-right: 12px;
+    font-size: 0.85rem;
+    line-height: 2;
+  }
+  h2 {
+    padding-left: 0;
+    font-size: 1.05rem;
+  }
+  main img {
+    width: 40%;
+    height: auto;
+  }
+}

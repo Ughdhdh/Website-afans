@@ -1,0 +1,43 @@
+@font-face {
+  font-family: 'Pixeled';
+  src: url('fonts/Pixeled.ttf') format('truetype');
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 5%;
+  text-align: center;
+}
+
+h1 {
+  font-family: Pixeled, monospace;
+  font-size: 1.3rem;
+  line-height: 1.6;
+  color: #163a19;
+}
+
+p {
+  font-size: 1.1rem;
+  margin: 20px 0 30px;
+}
+
+a {
+  font-family: Pixeled, monospace;
+  font-size: 0.9rem;
+  color: #ffffff;
+  background-color: #163a19;
+  padding: 2px 20px 10px 20px; 
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.5s ease;
+}
+
+a:hover {
+  background-color: #176e5b;
+}

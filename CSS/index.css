@@ -92,17 +92,6 @@ footer {
   display: flex;
 }
 
-/* Для узкого рахрешения экрана */
-@media (max-width: 600px) {
-  .navigation {
-    flex-direction: column; /* Кнопки встают друг под друга */
-    gap: 2px;
-  }
-  .button {
-    font-size: 0.8rem; /* Дополнительно уменьшаем шрифт на смартфонах */
-    padding: 12px 5px;
-  }
-}
 
 
 
@@ -177,4 +166,74 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+
+/* Телефоны и узкие экраны */
+@media (max-width: 600px) {
+  body {
+    display: block;
+    height: auto;
+    overflow: visible;
+    font-size: 1.05rem;
+  }
+  main {
+    overflow-y: visible;
+  }
+  nav {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 3%;
+  }
+  .button {
+    flex: 1 1 45%;
+    font-size: 0.85rem;
+    padding: 12px 6px;
+    white-space: normal;
+  }
+  h1 {
+    font-size: 2.4rem;
+    line-height: 1.1;
+    margin: 8px 0;
+  }
+  .fan {
+    font-size: 1.5rem;
+  }
+  h2 {
+    font-size: 1.05rem;
+    line-height: 1.4;
+    margin-top: 10px;
+    padding-left: 0;
+  }
+  ol, ul {
+    padding-left: 25px;
+  }
+  dl {
+    padding-left: 10px;
+  }
+  dl dd {
+    padding-left: 20px;
+  }
+  table th img {
+    width: 100%;
+    height: auto;
+  }
+  .sponsors img {
+    width: 30%;
+  }
+  footer {
+    margin: 0 3%;
+  }
+  .footer-block,
+  .footer-block:nth-child(2) {
+    flex: 1 0 100%;
+    text-align: center;
+  }
+  .footer-block:nth-child(3) {
+    display: block;
+    text-align: center;
+  }
+  .footer-block:nth-child(3) a {
+    display: inline-block;
+    margin: 4px 6px;
+  }
 }

@@ -1,6 +1,8 @@
 <!DOCTYPE HTML>
 <html lang="ru">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Заявка на вступление в фанулуб</title>
         <link rel="stylesheet" href="CSS/form.css">
     </head>
@@ -11,11 +13,28 @@
         </header>
         <main>
             <br>
-            <form action="#" method="POST">
+            <form id="club-form" action="https://api.web3forms.com/submit" method="POST">
+                <input type="hidden" name="access_key" value="8c75d66f-0e8d-43bc-94e9-4b8550d19265">
+                <input type="hidden" name="subject" value="Новая заявка в фанклуб">
+                <input type="hidden" name="from_name" value="Сайт фанклуба">
+                <!-- ловушка для ботов: людям не видна, боты её отмечают -->
+                <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
                 <table class="form-table">
                     <caption>
                     <b>Анкета участника</b>
                     </caption>
+                    <tr>
+                    <td class="label-cell"><label for="last_name">Фамилия*</label></td>
+                    <td><input required type="text" name="last_name" id="last_name" autocomplete="family-name"></td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="first_name">Имя*</label></td>
+                    <td><input required type="text" name="first_name" id="first_name" autocomplete="given-name"></td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="patronymic">Отчество*</label></td>
+                    <td><input required type="text" name="patronymic" id="patronymic" autocomplete="additional-name"></td>
+                    </tr>
                     <tr>
                     <td class="label-cell"><label for="email">E-mail*</label></td>
                     <td><input required type="email" name="email" id="email" placeholder="example@mail.com"></td>
@@ -27,9 +46,9 @@
                     <tr>
                     <td class="label-cell">Пол</td>
                     <td class="options-cell">
-                        <label><input type="radio" name="gender" value="1"> Мужчина</label>
-                        <label><input type="radio" name="gender" value="2"> Женщина</label>
-                        <label><input type="radio" name="gender" value="3"> Небинарность</label>
+                        <label><input type="radio" name="gender" value="Мужчина"> Мужчина</label>
+                        <label><input type="radio" name="gender" value="Женщина"> Женщина</label>
+                        <label><input type="radio" name="gender" value="Небинарность"> Небинарность</label>
                     </td>
                     </tr>
                     <tr>
@@ -59,13 +78,13 @@
                     <tr>
                     <td class="label-cell">Знание языков</td>
                     <td class="options-cell languages-grid">
-                        <label><input type="checkbox" name="language" value="en"> Английский</label>
-                        <label><input type="checkbox" name="language" value="ru" checked> Русский</label>
-                        <label><input type="checkbox" name="language" value="de"> Немецкий</label>
-                        <label><input type="checkbox" name="language" value="es"> Испанский</label>
-                        <label><input type="checkbox" name="language" value="fr"> Французский</label>
-                        <label><input type="checkbox" name="language" value="zh"> Китайский</label>
-                        <label><input type="checkbox" name="language" value="other"> Другое</label>
+                        <label><input type="checkbox" name="language" value="Английский"> Английский</label>
+                        <label><input type="checkbox" name="language" value="Русский" checked> Русский</label>
+                        <label><input type="checkbox" name="language" value="Немецкий"> Немецкий</label>
+                        <label><input type="checkbox" name="language" value="Испанский"> Испанский</label>
+                        <label><input type="checkbox" name="language" value="Французский"> Французский</label>
+                        <label><input type="checkbox" name="language" value="Китайский"> Китайский</label>
+                        <label><input type="checkbox" name="language" value="Другое"> Другое</label>
                     </td>
                     </tr>
                     <tr>
@@ -75,13 +94,47 @@
                     </td>
                     </tr>
                     <tr>
+                    <td colspan="2" class="options-cell agree-cell">
+                        <label><input required type="checkbox" name="agreement" value="Да"> Я согласен(на) с <a href="agreement.html" target="_blank">пользовательским соглашением</a>*</label>
+                    </td>
+                    </tr>
+                    <tr>
                     <td colspan="2" class="buttons-cell">
                         <button type="submit" class="btn btn-submit">Отправить</button>
                         <button type="reset" class="btn btn-reset">Сбросить</button>
+                        <p id="form-status" role="status"></p>
                     </td>
                     </tr>
                 </table>
             </form>
         </main>
+        <script>
+            document.getElementById('club-form').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                var form = e.target;
+                var btn = form.querySelector('.btn-submit');
+                var status = document.getElementById('form-status');
+                var data = {};
+                // собираем все поля; несколько отмеченных языков склеиваем через запятую
+                new FormData(form).forEach(function (v, k) {
+                    data[k] = (k in data) ? data[k] + ', ' + v : v;
+                });
+                btn.disabled = true;
+                status.textContent = 'Отправка...';
+                try {
+                    var r = await fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    var j = await r.json();
+                    if (j.success) { window.location.href = 'thanks.html'; return; }
+                    throw new Error(j.message);
+                } catch (err) {
+                    status.textContent = 'Не удалось отправить заявку. Попробуйте ещё раз позже.';
+                    btn.disabled = false;
+                }
+            });
+        </script>
     </body>
 </html>
