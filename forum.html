@@ -13,15 +13,12 @@
 
         <main>
             <br>
-            <form id="comment-form" class="comment-form" action="https://api.web3forms.com/submit" method="POST">
-                <input type="hidden" name="access_key" value="8c75d66f-0e8d-43bc-94e9-4b8550d19265">
-                <input type="hidden" name="subject" value="Новый комментарий на форуме">
-                <input type="hidden" name="from_name" value="Форум фанклуба">
-                <!-- ловушка для ботов: людям не видна, боты её отмечают -->
-                <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
+            <form id="comment-form" class="comment-form">
+                <!-- ловушка для ботов: людям не видна, боты её заполняют -->
+                <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off">
 
                 <label for="nick">Ник*</label>
-                <input required type="text" name="nick" id="nick" maxlength="20" placeholder="Как вас называть">
+                <input required type="text" name="nick" id="nick" maxlength="30" placeholder="Как вас называть">
 
                 <label for="comment">Комментарий*</label>
                 <textarea required name="comment" id="comment" rows="4" maxlength="500" placeholder="Напишите комментарий (до 500 символов)"></textarea>
@@ -40,78 +37,100 @@
 
         <script>
             (function () {
+                // ===== НАСТРОЙКА: данные вашего проекта Supabase (Project Settings -> API) =====
+                var SUPABASE_URL = 'https://jhqlomedjoereuaqpnso.supabase.co';   // вида https://xxxx.supabase.co
+                var SUPABASE_KEY = 'sb_publishable_sBsq4uxb2_qLOU4VQYDCNg_6tr7qcmz';  // публичный ключ, НЕ service_role!
+                // =============================================================================
+
+                var COOLDOWN_MS = 30000;   // не чаще одного комментария в 30 секунд с одного браузера
+                var API = SUPABASE_URL + '/rest/v1/comments';
+                var HEADERS = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
+                var configured = SUPABASE_URL.indexOf('http') === 0 && SUPABASE_KEY.indexOf('ВСТАВЬТЕ') !== 0;
+
                 var form = document.getElementById('comment-form');
                 var btn = form.querySelector('.btn-submit');
                 var status = document.getElementById('comment-status');
+                var list = document.getElementById('comments');
 
                 function setStatus(text, ok) {
                     status.textContent = text;
                     status.className = ok ? 'ok' : '';
                 }
 
-                function pad(n) { return (n < 10 ? '0' : '') + n; }
+                // ----- показ комментариев -----
+                function render(items) {
+                    list.textContent = '';
+                    if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
+                    items.forEach(function (c) {
+                        var card = document.createElement('div');
+                        card.className = 'comment';
+                        var head = document.createElement('div');
+                        head.className = 'comment-head';
+                        var nickEl = document.createElement('b');
+                        nickEl.textContent = c.nick;
+                        var dateEl = document.createElement('span');
+                        dateEl.textContent = new Date(c.created_at).toLocaleString('ru-RU', {
+                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
+                        head.appendChild(nickEl);
+                        head.appendChild(dateEl);
+                        var body = document.createElement('p');
+                        body.textContent = c.message;   // textContent: HTML из комментария не выполнится
+                        card.appendChild(head);
+                        card.appendChild(body);
+                        list.appendChild(card);
+                    });
+                }
 
-                // отправка комментария вам на почту
+                function load() {
+                    if (!configured) { list.textContent = 'Форум ещё не настроен.'; return Promise.resolve(); }
+                    return fetch(API + '?select=nick,message,created_at&order=created_at.desc&limit=100', { headers: HEADERS })
+                        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+                        .then(render)
+                        .catch(function () { list.textContent = 'Не удалось загрузить комментарии.'; });
+                }
+
+                // ----- отправка комментария -----
                 form.addEventListener('submit', async function (e) {
                     e.preventDefault();
                     var nick = form.nick.value.trim();
-                    var text = form.comment.value.trim();
-                    if (!nick || !text) {
-                        setStatus('Заполните ник и комментарий.');
+                    var message = form.comment.value.trim();
+                    if (!nick || !message) { setStatus('Заполните ник и комментарий.'); return; }
+                    if (!configured) { setStatus('Форум ещё не настроен.'); return; }
+                    if (form.website.value) {            // бот заполнил скрытое поле
+                        form.reset();
+                        setStatus('Отправлено!', true);
                         return;
                     }
+                    try {
+                        var last = Number(localStorage.getItem('forum_last') || 0);
+                        if (Date.now() - last < COOLDOWN_MS) {
+                            setStatus('Подождите немного перед следующим комментарием.');
+                            return;
+                        }
+                    } catch (err) {}
                     btn.disabled = true;
                     setStatus('Отправка...');
-                    var d = new Date();
-                    var date = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-                    var data = {};
-                    new FormData(form).forEach(function (v, k) { data[k] = v; });
-                    data.nick = nick;
-                    data.comment = text;
-                    // готовая строка: в письме её можно просто скопировать в comments.json
-                    data.json_for_comments = JSON.stringify({ nick: nick, date: date, text: text });
                     try {
-                        var r = await fetch(form.action, {
+                        var r = await fetch(API, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                            body: JSON.stringify(data)
+                            headers: Object.assign({ 'Prefer': 'return=minimal' }, HEADERS),
+                            body: JSON.stringify({ nick: nick, message: message })
                         });
-                        var j = await r.json();
-                        if (!j.success) throw new Error(j.message);
+                        if (!r.ok) throw new Error();
+                        try { localStorage.setItem('forum_last', String(Date.now())); } catch (err) {}
                         form.reset();
-                        setStatus('Отправлено! Комментарий появится после проверки.', true);
+                        setStatus('Отправлено!', true);
+                        load();
                     } catch (err) {
                         setStatus('Не удалось отправить комментарий. Попробуйте ещё раз позже.');
                     }
                     btn.disabled = false;
                 });
 
-                // список одобренных комментариев из файла comments.json
-                var list = document.getElementById('comments');
-                fetch('comments.json', { cache: 'no-store' })
-                    .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-                    .then(function (items) {
-                        list.textContent = '';
-                        if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
-                        items.forEach(function (c) {
-                            var card = document.createElement('div');
-                            card.className = 'comment';
-                            var head = document.createElement('div');
-                            head.className = 'comment-head';
-                            var nickEl = document.createElement('b');
-                            nickEl.textContent = c.nick;
-                            var dateEl = document.createElement('span');
-                            dateEl.textContent = c.date || '';
-                            head.appendChild(nickEl);
-                            head.appendChild(dateEl);
-                            var body = document.createElement('p');
-                            body.textContent = c.text;   // textContent: HTML из комментария не выполнится
-                            card.appendChild(head);
-                            card.appendChild(body);
-                            list.appendChild(card);
-                        });
-                    })
-                    .catch(function () { list.textContent = 'Не удалось загрузить комментарии.'; });
+                load();
+                // новые комментарии подтягиваются сами раз в 30 секунд
+                setInterval(function () { if (!document.hidden) load(); }, 30000);
             })();
         </script>
     </body>

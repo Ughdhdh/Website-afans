@@ -142,12 +142,12 @@ a:hover {
 }
 
 .btn-submit {
-  background-color: #176e5b;
+  background-color: #163a19;
   color: white;
 }
 
 .btn-submit:hover {
-  background-color: #163a19;
+  background-color: #176e5b;
 }
 
 .btn:disabled {

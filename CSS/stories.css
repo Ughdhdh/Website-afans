@@ -76,6 +76,10 @@ a {
   font-family: Pixeled;
 }
 
+img{
+  margin: 2% 2% 1% 1%;
+}
+
 a {
   text-decoration: none;
 }
