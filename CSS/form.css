@@ -39,9 +39,10 @@ header {
 
 main {
   overflow-y: auto;
-  margin: 5% 3% 5% 3%; 
-  padding-left: 2%;
-  padding-right: 2%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  margin: 0 3%;
+  padding: 0 2%;
 }
 
 h3 a {
@@ -239,6 +240,7 @@ input[type="range"] {
   }
   main {
     overflow-y: visible;
+    max-height: none;
     margin: 0 3%;
     padding: 0;
   }

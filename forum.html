@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Форум</title>
+        <link rel="stylesheet" href="CSS/forum.css">
+    </head>
+    <body>
+        <header>
+            <h3 id="0"><a href="index.html">на главную</a></h3>
+        </header>
+
+        <main>
+            <br>
+            <form id="comment-form" class="comment-form" action="https://api.web3forms.com/submit" method="POST">
+                <input type="hidden" name="access_key" value="8c75d66f-0e8d-43bc-94e9-4b8550d19265">
+                <input type="hidden" name="subject" value="Новый комментарий на форуме">
+                <input type="hidden" name="from_name" value="Форум фанклуба">
+                <!-- ловушка для ботов: людям не видна, боты её отмечают -->
+                <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
+
+                <label for="nick">Ник*</label>
+                <input required type="text" name="nick" id="nick" maxlength="30" placeholder="Как вас называть">
+
+                <label for="comment">Комментарий*</label>
+                <textarea required name="comment" id="comment" rows="4" maxlength="500" placeholder="Напишите комментарий (до 500 символов)"></textarea>
+
+                <div class="comment-actions">
+                    <button type="submit" class="btn btn-submit">Отправить</button>
+                    <p id="comment-status" role="status"></p>
+                </div>
+            </form>
+
+            <h2>Комментарии</h2>
+            <div id="comments">Загрузка...</div>
+            <br>
+            <br>
+        </main>
+
+        <script>
+            (function () {
+                var form = document.getElementById('comment-form');
+                var btn = form.querySelector('.btn-submit');
+                var status = document.getElementById('comment-status');
+
+                function setStatus(text, ok) {
+                    status.textContent = text;
+                    status.className = ok ? 'ok' : '';
+                }
+
+                function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+                // отправка комментария вам на почту
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    var nick = form.nick.value.trim();
+                    var text = form.comment.value.trim();
+                    if (!nick || !text) {
+                        setStatus('Заполните ник и комментарий.');
+                        return;
+                    }
+                    btn.disabled = true;
+                    setStatus('Отправка...');
+                    var d = new Date();
+                    var date = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+                    var data = {};
+                    new FormData(form).forEach(function (v, k) { data[k] = v; });
+                    data.nick = nick;
+                    data.comment = text;
+                    // готовая строка: в письме её можно просто скопировать в comments.json
+                    data.json_for_comments = JSON.stringify({ nick: nick, date: date, text: text });
+                    try {
+                        var r = await fetch(form.action, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        var j = await r.json();
+                        if (!j.success) throw new Error(j.message);
+                        form.reset();
+                        setStatus('Отправлено! Комментарий появится после проверки.', true);
+                    } catch (err) {
+                        setStatus('Не удалось отправить комментарий. Попробуйте ещё раз позже.');
+                    }
+                    btn.disabled = false;
+                });
+
+                // список одобренных комментариев из файла comments.json
+                var list = document.getElementById('comments');
+                fetch('comments.json', { cache: 'no-store' })
+                    .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+                    .then(function (items) {
+                        list.textContent = '';
+                        if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
+                        items.forEach(function (c) {
+                            var card = document.createElement('div');
+                            card.className = 'comment';
+                            var head = document.createElement('div');
+                            head.className = 'comment-head';
+                            var nickEl = document.createElement('b');
+                            nickEl.textContent = c.nick;
+                            var dateEl = document.createElement('span');
+                            dateEl.textContent = c.date || '';
+                            head.appendChild(nickEl);
+                            head.appendChild(dateEl);
+                            var body = document.createElement('p');
+                            body.textContent = c.text;   // textContent: HTML из комментария не выполнится
+                            card.appendChild(head);
+                            card.appendChild(body);
+                            list.appendChild(card);
+                        });
+                    })
+                    .catch(function () { list.textContent = 'Не удалось загрузить комментарии.'; });
+            })();
+        </script>
+    </body>
+</html>
