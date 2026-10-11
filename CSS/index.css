@@ -111,7 +111,7 @@ footer {
   text-decoration: none;
   transition: background-color 0.5s ease;
 }
-/* Эффект при наведении курсора */
+/* Эффект при наведении */
 .button:hover {
   background-color: #176e5b;
   text-decoration: none;
