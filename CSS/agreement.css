@@ -7,6 +7,8 @@ body {
 
 header {
     text-align: right;
+    margin-right: 1%;
+    margin-left: 1%;
 }
 
 strong {
@@ -17,7 +19,7 @@ em {
     color: green;
 }
 
-/* Выбираем только те li, которые идут сразу внутри ol */
+
 ol > li {
   font-size: 1.5em;
   color: crimson;
@@ -25,7 +27,7 @@ ol > li {
   text-transform: uppercase;
 }
 
-/* Сбрасываем стили для списка ul */
+
 ol > li > ul {
   font-size: 16px;
   color: black;
@@ -45,6 +47,8 @@ a:hover {
   text-decoration: underline;
 }
 
+
+
 /* Телефоны и узкие экраны */
 @media (max-width: 600px) {
   body {
@@ -61,4 +65,13 @@ a:hover {
     font-size: 16px;
     padding-left: 20px;
   }
+}
+
+* {
+  text-align: right;
+  list-style-type: none;
+  
+}
+ol > li > ul > li::marker {
+  content: none;
 }

@@ -1,3 +1,18 @@
+@font-face {
+  font-family: 'Pixeled';
+  src: url('fonts/Pixeled.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'HomeVideo';
+  src: url('fonts/HomeVideo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+
 body {
     background-image: url('../img/back.jpg'); 
     background-size: 25% auto;
@@ -14,4 +29,14 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+
+h2 {
+  font-size: 1.2rem;
+  font-family: Pixeled;
+}
+
+h1 {
+  font-size: 4rem;
+  font-family: HomeVideo; 
 }
