@@ -129,6 +129,11 @@ ul {
   margin-bottom: 20px;
 }
 
+/* маркированный список с картинками-маркерами */
+ul.img-marker {
+  list-style-image: url('../img/mark-small.png');
+}
+
 dl {
   padding-left: 25px;
   margin-bottom: 20px;

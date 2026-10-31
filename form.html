@@ -25,7 +25,7 @@
                     </caption>
                     <tr>
                     <td class="label-cell"><label for="last_name">Фамилия*</label></td>
-                    <td><input required type="text" name="last_name" id="last_name" autocomplete="family-name"></td>
+                    <td><input required autofocus type="text" name="last_name" id="last_name" autocomplete="family-name"></td>
                     </tr>
                     <tr>
                     <td class="label-cell"><label for="first_name">Имя*</label></td>
@@ -73,6 +73,22 @@
                     <td class="label-cell"><label for="range">Насколько любите Р.А.С.</label></td>
                     <td>
                         <input type="range" name="love_ras" id="range" min="0" max="10">
+                    </td>
+                    </tr>
+                    <tr>
+                    <td class="label-cell"><label for="source">Откуда узнали о фанклубе</label></td>
+                    <td>
+                        <select name="source" id="source">
+                            <option value="">— выберите —</option>
+                            <optgroup label="Интернет">
+                                <option value="Telegram">Telegram</option>
+                                <option value="Соцсети">Соцсети</option>
+                            </optgroup>
+                            <optgroup label="Лично">
+                                <option value="От друзей">От друзей</option>
+                                <option value="В университете">В университете</option>
+                            </optgroup>
+                        </select>
                     </td>
                     </tr>
                     <tr>
