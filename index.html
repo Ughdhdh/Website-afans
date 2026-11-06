@@ -143,6 +143,7 @@
                 <li>Лучшие произведения по мнению Р.А.С.</li>
                 <li>Посетители фанклуба</li>
                 <li>Участники фанклуба</li>
+                <li>Реклама</li>
                 <li>Спонсоры</li>
             </ul>
         </div>
@@ -156,13 +157,13 @@
                 <dt>Журнал</dt>
                 <dd>Красиво нарисованные двойки.</dd>
 
-                <dt>Подвиг 1. Дуб и староста</dt>
+                <dt>Подвиг 1. Духовное возрождение у векового дуба</dt>
                 <dd>Притча о том, как староста Александр Р. вернул веру в себя, глядя на старый дуб.</dd>
 
-                <dt>Подвиг 2. Чайная церемония</dt>
+                <dt>Подвиг 2. Путь чая против гнева Дракона</dt>
                 <dd>Как староста спас Академию Четырёх Стихий, не нанеся ни одного удара.</dd>
 
-                <dt>Подвиг 3. Зачёт по высшей математике</dt>
+                <dt>Подвиг 3. Переговоры на математическом Олимпе</dt>
                 <dd>Хмурым ноябрьским утром староста спас от паники целую группу.</dd>
             </dl>
         </div>
@@ -255,8 +256,28 @@
             </ol>
         </div>
         <br>
+        <div class="ads">
+            <h2 style="text-align: left;">Реклама</h2>
+            <section class="drop" id="avakyanDrop" aria-label="Рулетка AvakyanDrop">
+                <img class="drop-face" src="img/avakyan-face.png" alt="">
+                <div class="drop-head">
+                    <h3 class="drop-title">AvakyanDrop</h3>
+                    <p class="drop-sub">1 крутка в день. Испытай удачу!</p>
+                </div>
+                <div class="drop-window" id="dropWindow">
+                    <div class="drop-pointer" aria-hidden="true"></div>
+                    <div class="drop-track" id="dropTrack"></div>
+                    <div class="drop-result" id="dropResult" aria-live="polite"></div>
+                </div>
+                <div class="drop-foot">
+                    <button type="button" class="drop-btn" id="dropBtn">КРУТИТЬ</button>
+                    <span class="drop-note" id="dropNote"></span>
+                </div>
+            </section>
+        </div>
+        <br>
         <div class="sponsors">
-            <h2 style="text-align: left;">Спонсоры:</h2>
+            <h2 style="text-align: left;">Спонсоры</h2>
             <a href="https://xn--d1ah4a.com/"><img src="img/DTN.png" width="15%"></a>
             <a href="https://www.dota2.com/"><img src="img/dota.jpg" width="15%"></a>
             <a href="https://ru.wikipedia.org/wiki/%D0%9D%D1%8C%D1%8E%D1%8D%D0%BB%D0%BB,_%D0%93%D0%B5%D0%B9%D0%B1"><img src="img/gaben.jpg" width="15%"></a>
@@ -295,5 +316,6 @@
         </div>
     </footer>
 
+    <script src="JS/roulette.js"></script>
 </body>
 </html>
