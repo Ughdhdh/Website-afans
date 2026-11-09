@@ -1,24 +1,25 @@
-/* AvakyanDrop — рулетка «Реклама». Одна крутка в день (по локальной дате). */
+/* AvakyanDrop — рулетка «Реклама». Одна крутка раз в 6 часов. */
 (function () {
   'use strict';
 
   // ===== НАГРАДЫ (плейсхолдеры) — заменить на настоящие =====
-  // weight — относительный шанс выпадения, rarity: common | rare | epic | legendary
-  // img — путь к фото награды (необязательно). Нет img — показывается «?»
-  // Пример: { id: 1, name: 'Кружка', rarity: 'common', weight: 30, img: 'img/prizes/mug.png' }
   var PRIZES = [
     { id: 1, name: 'Летучка', rarity: 'common',      weight: 40, img: 'img/prizes/1.jpg' },
     { id: 2, name: 'Колоквиум', rarity: 'common',    weight: 20, img: 'img/prizes/2.jpg' },
-    { id: 3, name: 'Контрольная', rarity: 'common',  weight: 20, img: 'img/prizes/3.jpg' },
+    { id: 3, name: 'Контрольная', rarity: 'common',  weight: 19, img: 'img/prizes/3.jpg' },
     { id: 4, name: 'Нам бы...', rarity: 'rare',      weight: 10, img: 'img/prizes/4.jpg' },
     { id: 5, name: '7очка', rarity: 'epic',          weight: 7,  img: 'img/prizes/5.jpg' },
-    { id: 6, name: '9очка', rarity: 'legendary',     weight: 3,  img: 'img/prizes/6.jpg' }
+    { id: 6, name: '9очка', rarity: 'legendary',     weight: 3,  img: 'img/prizes/6.jpg' },
+    { id: 7, name: 'ПаПа СтуЧАт', rarity: 'legendary', weight: 1, img: 'img/prizes/7.jpg' }
   ];
 
   var STORAGE_KEY = 'avakyanDrop.lastSpin';
   var STRIP_LEN = 56;      // длина ленты
   var WIN_INDEX = 46;      // позиция выигрышной ячейки
-  var SPIN_MS = 6500;
+  var SPIN_MS = 6500;      // длительность анимации прокрутки
+
+  // Кулдаун между крутками: 6 часов в миллисекундах (6 * 60 * 60 * 1000)
+  var COOLDOWN_MS = 21600000; 
 
   var root = document.getElementById('avakyanDrop');
   if (!root) return;
@@ -31,15 +32,14 @@
   var spinning = false;
   var timer = null;
 
-  function today() {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
   function load() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; }
   }
   function save(prize) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today(), id: prize.id })); } catch (e) {}
+    try { 
+      // Сохраняем точную метку времени (timestamp) вместо даты YYYY-MM-DD
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ timestamp: Date.now(), id: prize.id })); 
+    } catch (e) {}
   }
   function byId(id) {
     return PRIZES.filter(function (p) { return p.id === id; })[0];
@@ -55,6 +55,13 @@
     return PRIZES[0];
   }
   function randomPrize() { return PRIZES[Math.floor(Math.random() * PRIZES.length)]; }
+
+  // Старый метод проверки по дате удален. Теперь сравниваем разницу во времени.
+  function isLocked() {
+    var last = load();
+    if (!last || !last.timestamp) return false;
+    return (Date.now() - last.timestamp) < COOLDOWN_MS;
+  }
 
   function iconHTML(p) {
     return p.img
@@ -82,18 +89,24 @@
   }
 
   function pad(n) { return String(n).padStart(2, '0'); }
+  
+  // Обновленный таймер: считает время относительно последней крутки
   function updateCountdown() {
-    var now = new Date();
-    var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    var left = Math.max(0, next - now);
+    var last = load();
+    if (!last || !last.timestamp) { lockUI(false); return; }
+
+    var nextSpinTime = last.timestamp + COOLDOWN_MS;
+    var left = Math.max(0, nextSpinTime - Date.now());
+
     if (left === 0 || !isLocked()) { lockUI(false); return; }
-    var h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
+
+    var h = Math.floor(left / 3600000), 
+        m = Math.floor((left % 3600000) / 60000), 
+        s = Math.floor((left % 60000) / 1000);
+
     note.textContent = 'Следующая крутка через ' + pad(h) + ':' + pad(m) + ':' + pad(s);
   }
-  function isLocked() {
-    var last = load();
-    return !!(last && last.date === today());
-  }
+
   function lockUI(locked) {
     btn.disabled = locked || spinning;
     clearInterval(timer);
@@ -119,9 +132,8 @@
     result.className = 'drop-result';
 
     var prize = pickWeighted();
-    save(prize); // фиксируем сразу, чтобы перезагрузкой нельзя было крутить заново
+    save(prize); 
 
-    // сброс в начало и пересборка ленты
     track.style.transition = 'none';
     track.style.transform = 'translateX(0)';
     build(prize);
@@ -150,7 +162,8 @@
 
   // ===== старт =====
   var last = load();
-  if (last && last.date === today() && byId(last.id)) {
+  // Проверяем блокировку по новому методу isLocked()
+  if (last && isLocked() && byId(last.id)) {
     var p = byId(last.id);
     build(p);
     track.style.transform = 'translateX(' + (-centerOffset(WIN_INDEX, 0)) + 'px)';
