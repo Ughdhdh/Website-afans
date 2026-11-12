@@ -19,7 +19,7 @@
   var SPIN_MS = 6500;      // длительность анимации прокрутки
 
   // Кулдаун между крутками: 6 часов в миллисекундах (6 * 60 * 60 * 1000)
-  var COOLDOWN_MS = 3000; 
+  var COOLDOWN_MS = 7200000; 
 
   var root = document.getElementById('avakyanDrop');
   if (!root) return;
