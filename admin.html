@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка · AvakyanDrop</title>
+    <meta name="robots" content="noindex">
+    <link rel="stylesheet" href="CSS/avadrop.css">
+    <link rel="stylesheet" href="CSS/admin.css">
+</head>
+<body>
+    <header class="top">
+        <a class="brand" href="avadrop.html">
+            <img class="brand-face" src="img/avakyan-face.png" alt="">
+            <span class="brand-name">Админ<b>ка</b></span>
+        </a>
+        <div class="top-right">
+            <div id="accMount"></div>
+            <a class="back" href="avadrop.html">AvakyanDrop</a>
+            <a class="back" href="index.html">Фанклуб</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="panel adm" id="gate">
+            <p id="gateMsg">Загрузка…</p>
+        </section>
+
+        <div id="adminBody" hidden>
+            <section class="panel adm">
+                <h2>Новый аккаунт</h2>
+                <p class="hint">Данные берите из заявки на вступление.</p>
+                <form id="createForm" class="adm-form" autocomplete="off">
+                    <label>Логин<input name="login" required minlength="3" maxlength="80"></label>
+                    <label>Пароль<input name="password" required minlength="4" maxlength="72"></label>
+                    <label>Имя на сайте<input name="name" required maxlength="30"></label>
+                    <label class="wide">Заметка (ФИО, группа, e-mail из заявки)<input name="note" maxlength="300"></label>
+                    <label class="chk"><input type="checkbox" name="approve" checked> Одобрить сразу</label>
+                    <button type="submit" class="adm-btn main">Создать аккаунт</button>
+                    <span id="createMsg" class="msg" role="status"></span>
+                </form>
+            </section>
+
+            <section class="panel adm">
+                <div class="adm-head">
+                    <h2>Аккаунты</h2>
+                    <div class="tabs" id="tabs">
+                        <button type="button" data-f="pending" class="on">Ожидают</button>
+                        <button type="button" data-f="all">Все</button>
+                    </div>
+                    <span id="listMsg" class="msg" role="status"></span>
+                </div>
+                <div class="table-wrap">
+                    <table class="adm-table">
+                        <thead><tr><th>Имя</th><th>Логин</th><th>Статус</th><th>Баланс</th><th>Предм.</th><th>Заметка</th><th>Действия</th></tr></thead>
+                        <tbody id="rows"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="JS/auth.js" data-theme="drop" data-chip="none"></script>
+    <script src="JS/admin.js"></script>
+</body>
+</html>

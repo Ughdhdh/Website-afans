@@ -8,8 +8,8 @@
     </head>
     <body>
         <header>
+            <div class="hbar" id="0"><a class="ava-btn" href="index.html">На главную</a></div>
             <h2>Для вступления заполните форму</h2>
-            <h3 id="0"><a href="index.html">на главную</a></h3>
         </header>
         <main>
             <br>
@@ -25,23 +25,27 @@
                     </caption>
                     <tr>
                     <td class="label-cell"><label for="last_name">Фамилия*</label></td>
-                    <td><input required autofocus type="text" name="last_name" id="last_name" autocomplete="family-name"></td>
+                    <td><input required autofocus type="text" name="last_name" id="last_name" autocomplete="family-name" placeholder="Райков"></td>
                     </tr>
                     <tr>
                     <td class="label-cell"><label for="first_name">Имя*</label></td>
-                    <td><input required type="text" name="first_name" id="first_name" autocomplete="given-name"></td>
+                    <td><input required type="text" name="first_name" id="first_name" autocomplete="given-name" placeholder="Александр"></td>
                     </tr>
                     <tr>
                     <td class="label-cell"><label for="patronymic">Отчество*</label></td>
-                    <td><input required type="text" name="patronymic" id="patronymic" autocomplete="additional-name"></td>
+                    <td><input required type="text" name="patronymic" id="patronymic" autocomplete="additional-name" placeholder="Сергеевич"></td>
                     </tr>
                     <tr>
                     <td class="label-cell"><label for="email">E-mail*</label></td>
                     <td><input required type="email" name="email" id="email" placeholder="example@mail.com"></td>
                     </tr>
                     <tr>
+                    <td class="label-cell"><label for="login">Логин*</label></td>
+                    <td><input required type="text" name="login" id="login" placeholder="Kibork67"></td>
+                    </tr>
+                    <tr>
                     <td class="label-cell"><label for="pass">Пароль*</label></td>
-                    <td><input required type="password" name="pass" id="pass" placeholder="Введите пароль"></td>
+                    <td><input required type="password" name="pass" id="pass" placeholder="674252GSTU"></td>
                     </tr>
                     <tr>
                     <td class="label-cell">Пол</td>
@@ -66,7 +70,7 @@
                     <tr>
                     <td class="label-cell"><label for="number">Любимое число</label></td>
                     <td>
-                        <input type="number" name="favorite_number" id="number" min="0">
+                        <input type="number" name="favorite_number" id="number" min="0" placeholder="67">
                     </td>
                     </tr>
                     <tr>
@@ -79,7 +83,7 @@
                     <td class="label-cell"><label for="source">Откуда узнали о фанклубе</label></td>
                     <td>
                         <select name="source" id="source">
-                            <option value="">— выберите —</option>
+                            <option value="" disabled selected hidden>выберите</option>
                             <optgroup label="Интернет">
                                 <option value="Telegram">Telegram</option>
                                 <option value="Соцсети">Соцсети</option>
@@ -106,7 +110,7 @@
                     <tr>
                     <td colspan="2" class="textarea-cell">
                         <label for="description" style="display:block; margin-bottom: 8px;">Коротко о себе:</label>
-                        <textarea name="description" id="description" rows="6" placeholder="Коротко о себе..."></textarea>
+                        <textarea name="description" id="description" rows="6" placeholder="Я крутой студент ГГПТУ. Учусь на первом курсе. Кончал ГГ..."></textarea>
                     </td>
                     </tr>
                     <tr>
@@ -153,5 +157,6 @@
                 }
             });
         </script>
+        <script src="JS/auth.js" data-chip="none"></script>
     </body>
 </html>

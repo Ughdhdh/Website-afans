@@ -40,14 +40,6 @@ main { grid-area: cont; }
 
 header {
     margin: 0 5% 0% 5%;
-    border-bottom: 1px solid #000000; 
-}
-
-nav {
-  display: flex;
-  flex-direction: row;
-  margin: 1% 5% 0% 5%;
-  border-bottom: 1px solid #000000;
 }
 
 main {
@@ -188,6 +180,19 @@ main h2 {
 .comment-head b {
   color: #163a19;
 }
+
+.comment-head .tag {
+  margin-left: 5px;
+  padding: 2px 5px;
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 100%;
+}
+.comment-head .tag.member { background: #e6f3e6; color: #163a19; border: 1px solid #163a19; }
+
+.who { margin-bottom: 10px; font-size: 14px; color: #4a5568; }
+#nick-block[hidden] { display: none; }
 
 .comment-head span {
   white-space: nowrap;

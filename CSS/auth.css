@@ -1,0 +1,124 @@
+/* Общий вход: плашка аккаунта и окно входа. Две темы: club (фанклуб) и drop (AvakyanDrop). */
+@font-face {
+  font-family: 'Pixeled';
+  src: url('fonts/Pixeled.ttf') format('truetype');
+}
+
+.ava-chip, .ava-overlay, .ava-acc, .hbar { --a-bg: #163a19; --a-bg2: #176e5b; --a-fg: #ffffff; --a-panel: #ffffff; --a-text: #111111; --a-border: #bcc2c9; --a-font: 'Pixeled', monospace; --a-err: #b91c1c; }
+.ava-chip[data-theme="drop"], .ava-overlay[data-theme="drop"], .ava-acc[data-theme="drop"] {
+  --a-bg: #7c3aed; --a-bg2: #9d5cff; --a-fg: #ffffff; --a-panel: #1b0f33; --a-text: #f3e8ff; --a-border: #4c2a85; --a-font: 'Inter', 'Segoe UI', system-ui, sans-serif; --a-err: #fca5a5;
+}
+
+/* плашка (фанклуб): правый верхний угол страницы */
+.ava-chip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  max-width: calc(100vw - 16px);
+  padding: 5px 6px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ava-chip { box-sizing: border-box; left: auto; }
+
+/* панель в шапке страниц фанклуба: слева «На главную», справа аккаунт. Не выходит за пределы header */
+.hbar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 0;
+  font-family: 'Pixeled', monospace;
+  font-size: 0.6rem;
+  line-height: 1.2;
+  color: #111;
+}
+.hbar .ava-btn, .hbar .ava-acc { font-size: inherit; line-height: inherit; }
+.hbar .ava-btn { padding: 6px 10px; white-space: nowrap; }
+.hbar .ava-slot { margin-left: auto; justify-content: flex-end; min-width: 0; }
+.hbar a.ava-btn { color: #111; }
+.hbar .ava-btn-main { color: var(--a-fg); }
+
+.ava-acc {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--a-font);
+}
+.ava-chip .ava-acc, .ava-chip.ava-acc { font-size: 0.6rem; color: #111; }
+.ava-name { font-weight: 700; }
+.ava-bal {
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(124, 58, 237, 0.18);
+  font-variant-numeric: tabular-nums;
+}
+.ava-chip .ava-bal { background: #e6f3e6; border-radius: 0; }
+
+.ava-btn {
+  font-family: var(--a-font);
+  font-size: inherit;
+  padding: 5px 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.ava-btn:hover { filter: brightness(1.15); text-decoration: none;}
+.ava-btn:disabled { opacity: 0.6; cursor: default; }
+.ava-btn-main { background: var(--a-bg); border-color: var(--a-bg); color: var(--a-fg); }
+.ava-btn-main:hover { background: var(--a-bg2); }
+
+/* окно входа */
+.ava-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  font-family: var(--a-font);
+}
+.ava-overlay[hidden] { display: none; }
+
+.ava-modal {
+  width: 100%;
+  max-width: 340px;
+  padding: 20px;
+  background: var(--a-panel);
+  color: var(--a-text);
+  border: 2px solid var(--a-bg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.ava-modal h3 { margin: 0 0 14px; font-size: 1rem; font-family: var(--a-font); }
+.ava-modal label { display: block; margin-bottom: 10px; font-size: 0.75rem; font-family: var(--a-font); }
+.ava-modal input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--a-border);
+  background: #fff;
+  color: #111;
+  font: 16px 'Segoe UI', system-ui, sans-serif;
+}
+.ava-overlay[data-theme="drop"] .ava-modal input { background: #2a1850; color: #f3e8ff; }
+.ava-err { min-height: 1.2em; margin: 4px 0 8px; color: var(--a-err); font: 14px 'Segoe UI', system-ui, sans-serif; }
+.ava-row { display: flex; gap: 8px; }
+.ava-row .ava-btn { padding: 9px 16px; font-size: 0.75rem; }
+.ava-hint { margin-top: 12px; font: 13px 'Segoe UI', system-ui, sans-serif; opacity: 0.85; }
+.ava-hint a { color: inherit; text-decoration: underline; font: inherit; padding: 0 !important; }
+
+@media (max-width: 600px) {
+  .ava-chip { top: 4px; right: 4px; }
+  .ava-chip .ava-acc, .ava-chip.ava-acc { font-size: 0.5rem; gap: 5px; }
+}

@@ -29,6 +29,7 @@
 body {
   height: 100vh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto 1fr auto; 
   grid-template-areas: 
         "head"
@@ -36,7 +37,7 @@ body {
         "cont"
         "foo";
   overflow: hidden;
-  max-width: 950px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -48,15 +49,15 @@ footer { grid-area: foo; }
 nav {
   display: flex;
   flex-direction: row;
-  margin: -1.67% 1% 0.67% 1%;
+  margin: -2% 1% 0.67% 1%;
   gap: 0.67%;
   z-index: 1;
 }
 
 main {
   overflow-y: auto;
-  margin: 0% 1% 0% 1%;
-  border-top: 1px solid #000000; 
+  border-top: 2px solid #111111;
+  margin: 0 1% 0 1%;
 }
 
 .sponsors {
@@ -73,14 +74,14 @@ main {
 }
 
 footer {
-  margin: 0% 1% 0% 1%;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
+  margin: 0 1% 0 1%;
   gap: 2%;
-  padding: 0.5% 0 0.7% 0;
-  border-top: 1px solid #000000; 
+  padding: 0.5% 1% 0.67% 1%;
+  border-top: 2px solid #111111;
 }
 
 .footer-block {
@@ -99,10 +100,6 @@ footer {
   display: flex;
 }
 
-
-
-
-/* Стили кнопок */
 .button {
   flex: 1;
   font-family: 'Pixeled', monospace;
@@ -110,7 +107,7 @@ footer {
   text-align: center;
   color: #ffffff;
   background-color: #163a19;
-  padding: 1px 20px 10px 20px; 
+  padding: 4px 10px 10px 10px;
   cursor: pointer;
   text-transform: uppercase;
   border: none;
@@ -118,13 +115,20 @@ footer {
   text-decoration: none;
   transition: background-color 0.5s ease;
 }
-/* Эффект при наведении */
+
 .button:hover {
   background-color: #176e5b;
   text-decoration: none;
 }
 
-
+.fix{
+   dl {
+    padding-left: 5px;
+  }
+  dl dd {
+    padding-left: 20px;
+  }
+}
 
 ol {
   padding-left: 40px;
@@ -182,6 +186,10 @@ h2 {
   font-family: Pixeled;
 }
 
+.ad-link { display: block; margin: 0 10px 0 10px; transition: transform 0.3s ease;}
+.ad-link img { width: 100%; border-radius: 15px;}
+.ad-link:hover { transform: scale(1.01); }
+
 a {
   text-decoration: none;
 }
@@ -227,10 +235,6 @@ a:hover {
     font-size: 1.05rem;
     line-height: 1.4;
     margin-top: 10px;
-    padding-left: 0;
-  }
-  ol, ul {
-    padding-left: 25px;
   }
   dl {
     padding-left: 10px;
@@ -262,249 +266,3 @@ a:hover {
     margin: 4px 6px;
   }
 }
-
-
-/* ===== Реклама: рулетка AvakyanDrop ===== */
-.ads { margin-top: 10px; }
-
-.drop {
-  --p1: #2a0a4d;
-  --p2: #5b21b6;
-  --p3: #a855f7;
-  position: relative;
-  overflow: hidden;
-  margin: 8px 10px 10px 10px;
-  padding: 16px 16px 14px 16px;
-  border-radius: 14px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 15% 0%, rgba(216, 180, 254, 0.45), transparent 55%),
-    linear-gradient(135deg, var(--p1) 0%, var(--p2) 55%, var(--p3) 100%);
-  box-shadow: 0 8px 28px rgba(91, 33, 182, 0.45), inset 0 0 0 2px rgba(216, 180, 254, 0.25);
-}
-
-/* PNG с лицом: слева сверху, фон прозрачный */
-.drop-face {
-  position: absolute;
-  left: 1px;
-  top: 1%;
-  height: 170px;
-  width: auto;
-  pointer-events: none;
-  user-select: none;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
-  z-index: 1;
-}
-
-.drop-head {
-  position: relative;
-  z-index: 2;
-  min-height: 140px;
-  padding-left: 170px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.drop-title {
-  font-family: 'Drop', monospace;
-  font-size: 3rem;
-  line-height: 1;
-  letter-spacing: 2px;
-  text-shadow: 0 0 18px rgba(233, 213, 255, 0.8), 0 3px 0 #2a0a4d;
-  text-transform: uppercase;
-}
-
-.drop-sub {
-  margin-top: 6px;
-  font-size: 0.95rem;
-  color: #e9d5ff;
-}
-
-.drop-window {
-  position: relative;
-  z-index: 2;
-  margin-top: 8px;
-  height: 140px;
-  overflow: hidden;
-  border-radius: 10px;
-  background: rgba(20, 5, 40, 0.55);
-  box-shadow: inset 0 0 0 2px rgba(216, 180, 254, 0.35), inset 0 0 30px rgba(0, 0, 0, 0.55);
-}
-
-/* затемнение по краям окна */
-.drop-window::before,
-.drop-window::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 18%;
-  z-index: 3;
-  pointer-events: none;
-}
-.drop-window::before { left: 0;  background: linear-gradient(90deg, rgba(20, 5, 40, 0.95), transparent); }
-.drop-window::after  { right: 0; background: linear-gradient(270deg, rgba(20, 5, 40, 0.95), transparent); }
-
-.drop-pointer {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  margin-left: -2px;
-  z-index: 4;
-  background: #fde68a;
-  box-shadow: 0 0 12px 2px rgba(253, 230, 138, 0.9);
-}
-.drop-pointer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 8px solid transparent;
-  border-top-color: #fde68a;
-}
-
-.drop-track {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 4px;
-  will-change: transform;
-}
-
-.drop-item {
-  flex: 0 0 auto;
-  width: 112px;
-  height: 112px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  border-bottom: 4px solid var(--rc, #c084fc);
-}
-.drop-item .ph {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--rc, #c084fc);
-  border: 2px dashed var(--rc, #c084fc);
-  background: rgba(0, 0, 0, 0.25);
-}
-
-.r-common    { --rc: #c4b5fd; }
-.r-rare      { --rc: #60a5fa; }
-.r-epic      { --rc: #e879f9; }
-.r-legendary { --rc: #fbbf24; }
-
-/* результат в окне рулетки */
-.drop-result {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.5s ease;
-  background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.95), rgba(20, 5, 40, 0.99) 80%);
-}
-.drop-result.show { opacity: 1; visibility: visible; }
-.drop-result .ph {
-  width: 84px;
-  height: 84px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  font-size: 2.6rem;
-  font-weight: 700;
-  color: var(--rc);
-  border: 3px dashed var(--rc);
-  background: rgba(0, 0, 0, 0.3);
-  box-shadow: 0 0 28px 4px var(--rc);
-  animation: dropGlow 1.6s ease-in-out infinite;
-}
-.drop-result .txt small {
-  display: block;
-  font-size: 0.8rem;
-  color: #e9d5ff;
-}
-.drop-result .txt strong {
-  display: block;
-  font-size: 1.5rem;
-  color: var(--rc);
-  text-shadow: 0 0 14px var(--rc);
-}
-@keyframes dropGlow {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.08); }
-}
-
-.drop-foot {
-  position: relative;
-  z-index: 2;
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.drop-btn {
-  font-family: 'Pixeled', monospace;
-  font-size: 1rem;
-  padding: 6px 28px 12px 28px;
-  border: none;
-  border-radius: 8px;
-  color: #2a0a4d;
-  background: linear-gradient(180deg, #fde68a, #f59e0b);
-  cursor: pointer;
-  box-shadow: 0 4px 0 #b45309, 0 0 18px rgba(253, 230, 138, 0.5);
-  transition: transform 0.15s ease, filter 0.3s ease;
-}
-.drop-btn:hover:not(:disabled) { transform: translateY(-2px); }
-.drop-btn:disabled {
-  cursor: not-allowed;
-  filter: grayscale(0.85) brightness(0.8);
-  box-shadow: none;
-}
-
-.drop-note { font-size: 0.9rem; color: #e9d5ff; }
-
-@media (max-width: 600px) {
-  .drop { margin: 8px 0; padding: 12px; }
-  .drop-face { height: 120px; }
-  .drop-head { min-height: 100px; padding-left: 110px; }
-  .drop-title { font-size: 1.8rem; }
-  .drop-sub { font-size: 0.85rem; }
-  .drop-window { height: 120px; }
-  .drop-item { width: 92px; height: 92px; font-size: 0.7rem; }
-  .drop-item .ph { width: 40px; height: 40px; font-size: 1.2rem; }
-  .drop-result { gap: 10px; }
-  .drop-result .ph { width: 64px; height: 64px; font-size: 2rem; }
-  .drop-result .txt strong { font-size: 1.1rem; }
-}
-
-/* фото награды вместо «?» */
-.drop-item .ph.has-img,
-.drop-result .ph.has-img { border-style: solid; overflow: hidden; padding: 0; }
-.drop-item .ph img,
-.drop-result .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }

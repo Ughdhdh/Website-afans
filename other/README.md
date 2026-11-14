@@ -1,0 +1,2 @@
+- Звуки рулетки: JS/avadrop.js, CONFIG.sounds (файлы в sounds/), prizeDelay (задержка звука предмета, мс).
+- Видео легендарки с прозрачным фоном: CONFIG.legendaryVideo (WebM VP9 с альфой), для Safari - legendaryVideoFallback (HEVC .mov с альфой). Нет видео - играет анимация взрыва.

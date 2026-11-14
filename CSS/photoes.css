@@ -22,7 +22,6 @@
 }
 
 body {
-  
   height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr; 
@@ -38,7 +37,6 @@ main { grid-area: cont; }
 
 header {
     margin: 0 5% 0px 5%;
-    border-bottom: 1px solid #000000; 
 }
 
 main {

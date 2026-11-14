@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AvakyanDrop</title>
+    <link rel="icon" href="img/avakyan-face.png">
+    <link rel="stylesheet" href="CSS/avadrop.css">
+</head>
+<body>
+
+    <header class="top">
+        <a class="brand" href="avadrop.html">
+            <img class="brand-face" src="img/avakyan-face.png" alt="">
+            <span class="brand-name">Avakyan<b>Drop</b></span>
+        </a>
+        <nav class="top-nav">
+            <a href="#roulette">Рулетка</a>
+            <a href="#rocket">Самолёт</a>
+            <a href="#inventory">Инвентарь</a>
+        </nav>
+        <div class="top-right">
+            <div id="accMount"></div>
+            <a class="back" href="index.html">← Фанклуб</a>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- ===== РУЛЕТКА ===== -->
+        <section id="roulette" class="panel drop" aria-label="Рулетка AvakyanDrop">
+            <img class="drop-face" src="img/avakyan-face.png" alt="">
+            <div class="drop-head">
+                <h1 class="drop-title">Avakyan<b>Drop</b></h1>
+                <p class="drop-sub" id="dropSub">Предметы падают в инвентарь, за каждый начисляются баллы.</p>
+            </div>
+
+            <div class="drop-window" id="dropWindow">
+                <div class="drop-pointer" aria-hidden="true"></div>
+                <div class="drop-track" id="dropTrack"></div>
+                <div class="drop-result" id="dropResult" aria-live="polite"></div>
+                <video class="drop-fxvideo" id="dropVideo" muted playsinline preload="none" hidden></video>
+            </div>
+
+            <div class="drop-foot">
+                <button type="button" class="spin-btn" id="dropBtn" disabled>Крутить бесплатно</button>
+                <button type="button" class="paid-btn" id="dropPaid" disabled>Ещё раз за 0.05&nbsp;б.</button>
+                <span class="drop-note" id="dropNote">Загрузка…</span>
+                <button type="button" class="snd-btn" id="dropSound" aria-pressed="true">Звук: вкл</button>
+            </div>
+
+            <p class="guest-warn" id="dropGuest" hidden>
+                Вы не вошли в аккаунт. Крутить можно, но предмет не сохранится и баллы не начислятся.
+                <button type="button" class="linklike" id="dropLogin">Войти</button>
+            </p>
+
+            <ul class="legend" id="dropLegend" aria-label="Награда в баллах за редкость"></ul>
+            <canvas class="drop-fx" id="dropFx" aria-hidden="true"></canvas>
+        </section>
+
+        <!-- ===== РАКЕТА ===== -->
+        <section id="rocket" class="panel rocket" aria-label="Самолёт">
+            <div class="rk-history" id="rkHistory" aria-label="Последние раунды"></div>
+
+            <div class="rk-stage" id="rkStage">
+                <canvas id="rkCanvas"></canvas>
+                <div class="rk-mult" id="rkMult">x1.00</div>
+                <div class="rk-sub" id="rkSub">Загрузка…</div>
+            </div>
+
+            <div class="rk-bets" id="rkBets"></div>
+            <p class="rk-msg" id="rkMsg" role="status"></p>
+        </section>
+
+        <!-- ===== ИНВЕНТАРЬ ===== -->
+        <section id="inventory" class="panel inv" aria-label="Инвентарь">
+            <div class="inv-head">
+                <h2>Инвентарь</h2>
+                <span class="inv-total" id="invTotal"></span>
+            </div>
+            <div class="inv-grid" id="invGrid"></div>
+        </section>
+
+    </main>
+
+    <footer class="foot">
+        AvakyanDrop · баллы виртуальные, реальных денег здесь нет
+    </footer>
+
+    <script src="JS/auth.js" data-theme="drop" data-chip="none"></script>
+    <script src="JS/avadrop.js"></script>
+    <script src="JS/rocket.js"></script>
+</body>
+</html>

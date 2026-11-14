@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сайт «Фанклуб Александра Райкова»</title>
     <link rel="stylesheet" href="CSS/index.css">
+    <link rel="stylesheet" href="CSS/auth.css">
     <style>
         table {
             border-collapse: collapse;
@@ -58,7 +59,7 @@
 
     <main>
         <br>
-        <div>
+        <div class="fix">
             <h2>Жизнь Александра Сергеевича</h2>
             <ul>
                 <li>
@@ -258,24 +259,16 @@
             </ol>
         </div>
         <br>
-        <div class="ads">
+        <div>
             <h2 style="text-align: left;">Реклама</h2>
-            <section class="drop" id="avakyanDrop" aria-label="Рулетка AvakyanDrop">
-                <img class="drop-face" src="img/avakyan-face.png" alt="">
-                <div class="drop-head">
-                    <h3 class="drop-title">Avakyan<span style="font-size: 1rem;"> </span>Drop</h3>
-                    <p class="drop-sub">1 крутка каждые 6 часов. Испытай удачу!</p>
-                </div>
-                <div class="drop-window" id="dropWindow">
-                    <div class="drop-pointer" aria-hidden="true"></div>
-                    <div class="drop-track" id="dropTrack"></div>
-                    <div class="drop-result" id="dropResult" aria-live="polite"></div>
-                </div>
-                <div class="drop-foot">
-                    <button type="button" class="drop-btn" id="dropBtn">КРУТИТЬ</button>
-                    <span class="drop-note" id="dropNote"></span>
-                </div>
-            </section>
+            <a class="ad-link" href="avadrop.html" title="Перейти на AvakyanDrop">
+                <img src="img/ad.jpg" alt="Реклама: AvakyanDrop">
+            </a>
+        </div>
+        <br>
+        <div>
+            <h2 style="text-align: left;">Поддержка</h2>
+            <p style="margin: 0 2% 0 2%;">Поддержите сайт чекнной монетой. 50% донатов идёт прекрасному Александру Р.</p>
         </div>
         <br>
         <div class="sponsors">
@@ -318,6 +311,6 @@
         </div>
     </footer>
 
-    <script src="JS/roulette.js"></script>
+    <script src="JS/auth.js"></script>
 </body>
 </html>

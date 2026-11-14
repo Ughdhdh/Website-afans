@@ -5,10 +5,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Форум</title>
         <link rel="stylesheet" href="CSS/forum.css">
+        <link rel="stylesheet" href="CSS/auth.css">
     </head>
     <body>
         <header>
-            <h3 id="0"><a href="index.html">на главную</a></h3>
+            <div class="hbar" id="0"><a class="ava-btn" href="index.html">На главную</a><div class="ava-slot"></div></div>
         </header>
 
         <main>
@@ -17,8 +18,11 @@
                 <!-- ловушка для ботов: людям не видна, боты её заполняют -->
                 <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off">
 
-                <label for="nick">Ник*</label>
-                <input required type="text" name="nick" id="nick" maxlength="30" placeholder="Как вас называть">
+                <p id="who" class="who"></p>
+                <div id="nick-block">
+                    <label for="nick">Ник*</label>
+                    <input required type="text" name="nick" id="nick" maxlength="30" placeholder="Как вас называть">
+                </div>
 
                 <label for="comment">Комментарий*</label>
                 <textarea required name="comment" id="comment" rows="4" maxlength="500" placeholder="Напишите комментарий (до 500 символов)"></textarea>
@@ -35,6 +39,7 @@
             <br>
         </main>
 
+        <script src="JS/auth.js"></script>
         <script>
             (function () {
                 // ===== НАСТРОЙКА: данные вашего проекта Supabase (Project Settings -> API) =====
@@ -52,6 +57,20 @@
                 var status = document.getElementById('comment-status');
                 var list = document.getElementById('comments');
 
+                var nickBlock = document.getElementById('nick-block');
+                var who = document.getElementById('who');
+                Ava.onChange(function (u) {
+                    if (u) {
+                        nickBlock.hidden = true;
+                        form.nick.required = false;
+                        who.textContent = 'Вы пишете как ' + u.name + ' (участник фанклуба).';
+                    } else {
+                        nickBlock.hidden = false;
+                        form.nick.required = true;
+                        who.textContent = 'Вы пишете как гость. Войдите в аккаунт, и сообщения будут отмечены как сообщения участника.';
+                    }
+                });
+
                 function setStatus(text, ok) {
                     status.textContent = text;
                     status.className = ok ? 'ok' : '';
@@ -59,32 +78,43 @@
 
                 // ----- показ комментариев -----
                 function render(items) {
-                    list.textContent = '';
-                    if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
-                    items.forEach(function (c) {
-                        var card = document.createElement('div');
-                        card.className = 'comment';
-                        var head = document.createElement('div');
-                        head.className = 'comment-head';
-                        var nickEl = document.createElement('b');
-                        nickEl.textContent = c.nick;
-                        var dateEl = document.createElement('span');
-                        dateEl.textContent = new Date(c.created_at).toLocaleString('ru-RU', {
-                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                        });
-                        head.appendChild(nickEl);
-                        head.appendChild(dateEl);
-                        var body = document.createElement('p');
-                        body.textContent = c.message;   // textContent: HTML из комментария не выполнится
-                        card.appendChild(head);
-                        card.appendChild(body);
-                        list.appendChild(card);
+                list.textContent = '';
+                if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
+                items.forEach(function (c) {
+                    var card = document.createElement('div');
+                    card.className = 'comment';
+                    var head = document.createElement('div');
+                    head.className = 'comment-head';
+                    var left = document.createElement('div');
+                    var nickEl = document.createElement('b');
+                    nickEl.textContent = c.nick;
+                    left.appendChild(nickEl);
+
+                    if (c.verified) {
+                        var tag = document.createElement('em');
+                        tag.className = 'tag member';
+                        tag.textContent = '✔';
+                        left.appendChild(tag);
+                    }
+
+                    var dateEl = document.createElement('span');
+                    dateEl.textContent = new Date(c.created_at).toLocaleString('ru-RU', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     });
-                }
+                    head.appendChild(left);
+                    head.appendChild(dateEl);
+                    var body = document.createElement('p');
+                    body.textContent = c.message;
+                    card.appendChild(head);
+                    card.appendChild(body);
+                    list.appendChild(card);
+                });
+            }
+
 
                 function load() {
                     if (!configured) { list.textContent = 'Форум ещё не настроен.'; return Promise.resolve(); }
-                    return fetch(API + '?select=nick,message,created_at&order=created_at.desc&limit=100', { headers: HEADERS })
+                    return fetch(API + '?select=nick,message,created_at,verified&order=created_at.desc&limit=100', { headers: HEADERS })
                         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
                         .then(render)
                         .catch(function () { list.textContent = 'Не удалось загрузить комментарии.'; });
@@ -93,10 +123,25 @@
                 // ----- отправка комментария -----
                 form.addEventListener('submit', async function (e) {
                     e.preventDefault();
+                    var member = !!Ava.user;
                     var nick = form.nick.value.trim();
                     var message = form.comment.value.trim();
-                    if (!nick || !message) { setStatus('Заполните ник и комментарий.'); return; }
+                    if (!message || (!member && !nick)) { setStatus(member ? 'Напишите комментарий.' : 'Заполните ник и комментарий.'); return; }
                     if (!configured) { setStatus('Форум ещё не настроен.'); return; }
+                    if (member) {                         // участник: ник берёт сервер из аккаунта
+                        btn.disabled = true;
+                        setStatus('Отправка...');
+                        try {
+                            await Ava.call('forum_post', { p_message: message });
+                            form.reset();
+                            setStatus('Отправлено!', true);
+                            load();
+                        } catch (err) {
+                            setStatus(Ava.errText(err));
+                        }
+                        btn.disabled = false;
+                        return;
+                    }
                     if (form.website.value) {            // бот заполнил скрытое поле
                         form.reset();
                         setStatus('Отправлено!', true);
@@ -117,13 +162,19 @@
                             headers: Object.assign({ 'Prefer': 'return=minimal' }, HEADERS),
                             body: JSON.stringify({ nick: nick, message: message })
                         });
-                        if (!r.ok) throw new Error();
+                        if (!r.ok) {
+                            var body = {};
+                            try { body = await r.json(); } catch (x) {}
+                            var ex = new Error(body.message || 'HTTP');
+                            throw ex;
+                        }
                         try { localStorage.setItem('forum_last', String(Date.now())); } catch (err) {}
                         form.reset();
                         setStatus('Отправлено!', true);
                         load();
                     } catch (err) {
-                        setStatus('Не удалось отправить комментарий. Попробуйте ещё раз позже.');
+                        setStatus(err.message === 'NICK_RESERVED' ? Ava.errText(err)
+                                  : 'Не удалось отправить комментарий. Попробуйте ещё раз позже.');
                     }
                     btn.disabled = false;
                 });
