@@ -41,11 +41,11 @@
                     </tr>
                     <tr>
                     <td class="label-cell"><label for="login">Логин*</label></td>
-                    <td><input required type="text" name="login" id="login" placeholder="Kibork67"></td>
+                    <td><input required type="text" name="login" id="login" minlength="3" maxlength="80" autocomplete="username" placeholder="Kibork67"></td>
                     </tr>
                     <tr>
                     <td class="label-cell"><label for="pass">Пароль*</label></td>
-                    <td><input required type="password" name="pass" id="pass" placeholder="674252GSTU"></td>
+                    <td><input required type="password" name="pass" id="pass" minlength="4" maxlength="72" autocomplete="new-password" placeholder="674252GSTU"></td>
                     </tr>
                     <tr>
                     <td class="label-cell">Пол</td>
@@ -140,8 +140,31 @@
                 new FormData(form).forEach(function (v, k) {
                     data[k] = (k in data) ? data[k] + ', ' + v : v;
                 });
+                // пароль уходит только в Supabase (там хранится в виде хеша), на почту его не шлём
+                var password = data.pass;
+                delete data.pass;
+
                 btn.disabled = true;
                 status.textContent = 'Отправка...';
+
+                // 1) создаём аккаунт в Supabase со статусом «ожидает одобрения»
+                try {
+                    await Ava.rpc('register_application', {
+                        p_login: (data.login || '').trim(),
+                        p_password: password,
+                        p_last: data.last_name,
+                        p_first: data.first_name,
+                        p_patronymic: data.patronymic,
+                        p_email: data.email
+                    });
+                } catch (err) {
+                    status.textContent = Ava.errText(err);
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 2) отправляем анкету на почту (без пароля). Аккаунт уже создан,
+                //    поэтому сбой почты не мешает: e-mail сохранён в заметке аккаунта
                 try {
                     var r = await fetch(form.action, {
                         method: 'POST',
@@ -149,12 +172,11 @@
                         body: JSON.stringify(data)
                     });
                     var j = await r.json();
-                    if (j.success) { window.location.href = 'thanks.html'; return; }
-                    throw new Error(j.message);
+                    if (!j.success) console.error('Web3Forms:', j.message);
                 } catch (err) {
-                    status.textContent = 'Не удалось отправить заявку. Попробуйте ещё раз позже.';
-                    btn.disabled = false;
+                    console.error('Web3Forms:', err);
                 }
+                window.location.href = 'thanks.html';
             });
         </script>
         <script src="JS/auth.js" data-chip="none"></script>

@@ -1,10 +1,10 @@
-/* Админка: создание аккаунтов, одобрение, блокировка, пароль, баланс.
+/* Админка: одобрение заявок, блокировка, пароль, баланс, заметки.
    Все действия проверяются на сервере (нужен аккаунт с is_admin). */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var gate = $('gate'), gateMsg = $('gateMsg'), body = $('adminBody');
-  var rows = $('rows'), listMsg = $('listMsg'), createMsg = $('createMsg');
+  var rows = $('rows'), listMsg = $('listMsg');
   var filter = 'pending';
   var accounts = [];
 
@@ -40,6 +40,7 @@
       if (a.status !== 'blocked' && !(Ava.user && a.id === Ava.user.id)) act.appendChild(button('Заблокировать', 'bad', function () { setStatus(a, 'blocked'); }));
       act.appendChild(button('Пароль', '', function () { resetPass(a); }));
       act.appendChild(button('Баланс', '', function () { adjust(a); }));
+      act.appendChild(button('Заметка', '', function () { editNote(a); }));
       tr.appendChild(act);
       rows.appendChild(tr);
     });
@@ -65,6 +66,12 @@
     Ava.call('admin_reset_password', { p_id: a.id, p_password: p }).then(function () { msg(listMsg, 'Пароль изменён, сессии пользователя сброшены.', true); },
       function (e) { msg(listMsg, Ava.errText(e)); });
   }
+  function editNote(a) {
+    var v = prompt('Заметка для ' + a.name + ' (до 500 символов, пусто = удалить):', a.note || '');
+    if (v === null) return;
+    Ava.call('admin_set_note', { p_id: a.id, p_note: v }).then(function () { msg(listMsg, 'Заметка сохранена.', true); return load(); },
+      function (e) { msg(listMsg, Ava.errText(e)); });
+  }
   function adjust(a) {
     var v = prompt('Изменить баланс ' + a.name + ' на сколько? (например 0.5 или -0.2)\nСейчас: ' + Ava.fmt(a.balance));
     if (v === null) return;
@@ -72,22 +79,6 @@
     if (!isFinite(d) || d === 0) { msg(listMsg, 'Введите число.'); return; }
     Ava.call('admin_adjust_balance', { p_id: a.id, p_delta: d, p_reason: 'admin panel' }).then(load, function (e) { msg(listMsg, Ava.errText(e)); });
   }
-
-  $('createForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var f = e.target;
-    var btn = f.querySelector('button[type=submit]');
-    btn.disabled = true; msg(createMsg, '');
-    Ava.call('admin_create_account', {
-      p_login: f.login.value.trim(), p_password: f.password.value, p_name: f.name.value.trim(),
-      p_note: f.note.value.trim() || null, p_approve: f.approve.checked
-    }).then(function () {
-      msg(createMsg, 'Аккаунт создан' + (f.approve.checked ? ' и одобрен.' : ', он ждёт одобрения.'), true);
-      f.reset(); f.approve.checked = true;
-      filter = f.approve.checked ? filter : 'pending';
-      return load();
-    }, function (ex) { msg(createMsg, Ava.errText(ex)); }).then(function () { btn.disabled = false; });
-  });
 
   $('tabs').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
