@@ -205,7 +205,7 @@
 
     var hint = document.createElement('p');
     hint.className = 'ava-hint';
-    hint.appendChild(document.createTextNode('Нет аккаунта? Аккаунты выдаёт администратор после '));
+    hint.appendChild(document.createTextNode('Нет аккаунта? Аккаунты одобряет администратор после '));
     var a = document.createElement('a');
     a.href = base + 'form.html'; a.textContent = 'заявки на вступление';
     hint.appendChild(a);
