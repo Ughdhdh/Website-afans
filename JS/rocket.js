@@ -13,7 +13,7 @@
     angleOffset: 0          // если ваша картинка повёрнута, поправьте угол (в радианах, например -0.3)
   };
   var WOBBLE = {
-    amp: 0.09,              // размах покачивания вверх-вниз (доля высоты сцены); 0 = летит ровно по кривой
+    amp: 0.08,              // размах покачивания вверх-вниз (доля высоты сцены); 0 = летит ровно по кривой
     f1: 1.1, f2: 2.3        // частоты покачивания
   };
   // =====================================================================
@@ -187,7 +187,7 @@
   }
 
   function startDemo(auto) {
-    var cp = Math.min(200, Math.max(1, Math.floor(97 / (1 - Math.random())) / 100));
+    var cp = Math.min(200, Math.max(1.67, Math.floor(115 / (1 - Math.random())) / 100));
     resetFx();
     pokedAuto = false;
     game = { id: 'demo' + Date.now(), demo: true, status: 'active', start: Date.now(), crash_point: cp, amount: 0, auto: auto, mult: null, payout: 0 };
