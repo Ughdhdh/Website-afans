@@ -67,7 +67,7 @@
     var box = el('div', 'amount-box');
     var amount = el('div', 'amount');
     var bMinus = el('button', '', '−'); bMinus.type = 'button';
-    var inAmt = el('input'); inAmt.type = 'number'; inAmt.min = '0.01'; inAmt.max = '1000'; inAmt.step = '0.01'; inAmt.inputMode = 'decimal';
+    var inAmt = el('input'); inAmt.type = 'number'; inAmt.min = '0.01'; inAmt.step = '0.01'; inAmt.inputMode = 'decimal';
     var bPlus = el('button', '', '+'); bPlus.type = 'button';
     amount.appendChild(bMinus); amount.appendChild(inAmt); amount.appendChild(bPlus);
     var quick = el('div', 'quick');
@@ -87,7 +87,7 @@
 
     function readAmt() { var v = parseFloat(inAmt.value); return isFinite(v) ? v : 0; }
     function setAmt(v) {
-      v = Math.min(1000, Math.max(0.01, Math.round(v * 100) / 100));
+      v = Math.max(0.01, Math.round(v * 100) / 100);
       inAmt.value = fmt(v); save('rk.amt', v); lastKey = ''; render();
     }
     function readAuto() {
@@ -187,7 +187,7 @@
   }
 
   function startDemo(auto) {
-    var cp = Math.min(200, Math.max(1.67, Math.floor(115 / (1 - Math.random())) / 100));
+    var cp = Math.min(200, Math.max(1.01, Math.floor(110 / (1 - Math.random())) / 100));
     resetFx();
     pokedAuto = false;
     game = { id: 'demo' + Date.now(), demo: true, status: 'active', start: Date.now(), crash_point: cp, amount: 0, auto: auto, mult: null, payout: 0 };

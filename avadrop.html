@@ -17,6 +17,7 @@
         <nav class="top-nav">
             <a href="#roulette">Рулетка</a>
             <a href="#rocket">Самолёт</a>
+            <a href="#whack">Еноты</a>
             <a href="#inventory">Инвентарь</a>
         </nav>
         <div class="top-right">
@@ -72,6 +73,37 @@
             <p class="rk-msg" id="rkMsg" role="status"></p>
         </section>
 
+        <!-- ===== ЕНОТЫ (удар крота) ===== -->
+        <section id="whack" class="panel whack" aria-label="Ударь енота">
+            <div class="wh-head">
+                <h2>Ударь енота</h2>
+                <div class="wh-stats">
+                    <span>Ход <b id="whTurn">1</b>/12</span>
+                    <span>В игре <b id="whTotal">0.00&nbsp;б.</b></span>
+                </div>
+            </div>
+
+            <div class="wh-board">
+                <div class="wh-grid" id="whGrid"></div>
+                <div class="wh-timer"><i id="whTimer"></i></div>
+                <div class="wh-over" id="whOver">
+                    <div class="wh-over-title" id="whOverTitle">Ударь енота</div>
+                    <div class="wh-over-text" id="whOverText"></div>
+                </div>
+            </div>
+
+            <div class="wh-foot">
+                <button type="button" class="wh-btn" id="whStart">Играть</button>
+                <button type="button" class="wh-btn wh-cash" id="whCash" disabled>Вывести</button>
+                <span class="wh-msg" id="whMsg" role="status"></span>
+            </div>
+            <p class="wh-rules">
+                Еноты: <b>+0.01&nbsp;б.</b> за каждого. Иногда вместе с ними вылезает Авакян: клик по нему <b>−1&nbsp;б.</b>
+                Каждые 3 хода Авакянов становится больше (до 8), а время хода меньше.
+                Набранное можно вывести после 5-го хода. Баланс может уйти в минус. Бросите игру: плюс сгорит, минус останется.
+            </p>
+        </section>
+
         <!-- ===== ИНВЕНТАРЬ ===== -->
         <section id="inventory" class="panel inv" aria-label="Инвентарь">
             <div class="inv-head">
@@ -90,5 +122,6 @@
     <script src="JS/auth.js" data-theme="drop" data-chip="none"></script>
     <script src="JS/avadrop.js"></script>
     <script src="JS/rocket.js"></script>
+    <script src="JS/whack.js"></script>
 </body>
 </html>

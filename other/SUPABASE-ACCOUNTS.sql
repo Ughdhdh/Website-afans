@@ -29,7 +29,7 @@ create table if not exists public.accounts (
   pass_hash     text not null,
   status        text not null default 'pending' check (status in ('pending','approved','blocked')),
   is_admin      boolean not null default false,
-  balance       numeric(14,2) not null default 0 check (balance >= 0),
+  balance       numeric(14,2) not null default 0,     -- может уходить в минус (игра «Еноты»)
   note          text,
   last_spin_at  timestamptz,
   created_at    timestamptz not null default now()
@@ -110,6 +110,7 @@ alter table public.prizes         enable row level security;
 alter table public.inventory      enable row level security;
 alter table public.balance_log    enable row level security;
 alter table public.rocket_games   enable row level security;
+alter table public.accounts drop constraint if exists accounts_balance_check;   -- баланс может быть отрицательным
 
 revoke all on public.accounts, public.sessions, public.login_attempts, public.prizes,
               public.inventory, public.balance_log, public.rocket_games
@@ -143,16 +144,16 @@ create trigger comments_guard before insert on public.comments
 -- ---------------------------------------------------------------------
 -- Кулдаун бесплатной крутки
 create or replace function public._drop_cooldown() returns interval language sql immutable as
-$$ select interval '4 hours' $$;
+$$ select interval '2 hours' $$;
 
 -- Цена дополнительной (платной) крутки в баллах
 create or replace function public._paid_spin_cost() returns numeric language sql immutable as
-$$ select 0.04::numeric $$;
+$$ select 0.05::numeric $$;
 
 -- Сколько баллов даёт предмет в зависимости от редкости
 create or replace function public._reward(p_rarity text) returns numeric language sql immutable as
 $$ select case p_rarity when 'common' then 0.01 when 'rare' then 0.03
-                        when 'epic' then 0.05 when 'legendary' then 0.09 else 0 end::numeric $$;
+                        when 'epic' then 0.06 when 'legendary' then 0.12 else 0 end::numeric $$;
 
 -- Ракета: множитель = exp(рост * секунды). 0.12 => x2 через ~5.8 c, x10 через ~19 c
 create or replace function public._rk_growth()     returns numeric language sql immutable as $$ select 0.12::numeric $$;
@@ -161,12 +162,12 @@ $$ select exp(public._rk_growth() * greatest(p_secs, 0)) $$;
 
 -- призы (названия и картинки взяты из вашей рулетки; шансы можно менять)
 insert into public.prizes (id, name, rarity, weight, img) values
-  (1, 'Летучка',     'common',    40, 'img/prizes/1.jpg'),
-  (2, 'Колоквиум',   'common',    20, 'img/prizes/2.jpg'),
-  (3, 'Контрольная', 'common',    19, 'img/prizes/3.jpg'),
+  (1, 'Летучка',     'common',    30, 'img/prizes/1.jpg'),
+  (2, 'Колоквиум',   'common',    25, 'img/prizes/2.jpg'),
+  (3, 'Контрольная', 'common',    25, 'img/prizes/3.jpg'),
   (4, 'Нам бы...',   'rare',      10, 'img/prizes/4.jpg'),
   (5, '7очка',       'epic',       7, 'img/prizes/5.jpg'),
-  (6, '9очка',       'legendary',  3, 'img/prizes/6.jpg'),
+  (6, '9очка',       'legendary',  2, 'img/prizes/6.jpg'),
   (7, 'ПаПа СтуЧАт', 'legendary',  1, 'img/prizes/7.jpg')
 on conflict (id) do nothing;
 
@@ -442,7 +443,7 @@ declare a public.accounts; amt numeric; au numeric; u double precision; cp numer
 begin
   a := public._acc(p_token);
   amt := round(coalesce(p_amount, 0), 2);
-  if amt < 0.01 or amt > 1000 then raise exception 'BAD_AMOUNT'; end if;
+  if amt < 0.01 then raise exception 'BAD_AMOUNT'; end if;
   if p_auto is not null then
     au := round(p_auto, 2);
     if au < 1.01 or au > 1000 then raise exception 'BAD_AUTO'; end if;
@@ -457,7 +458,7 @@ begin
   if a.balance < amt then raise exception 'NO_FUNDS'; end if;
 
   u  := random();
-  cp := least(200, greatest(1.00, floor(97 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
+  cp := least(200, greatest(1.01, floor(110 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
   insert into public.rocket_games (account_id, amount, auto_cashout, crash_point, start_at, crash_at)
   values (a.id, amt, au, cp, now(), now() + make_interval(secs => (ln(cp) / public._rk_growth())::double precision));
   perform public._credit(a.id, -amt, 'rocket:bet');
@@ -573,19 +574,157 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+--  ЕНОТЫ (удар крота): сетка 3x3, +0.01 за енота, -1 за Авакяна
+-- ---------------------------------------------------------------------
+-- Ход = одна раскладка. Енотов 2-4 (+0.01 за каждого), с шансом 40% вместе с ними вылезают Авакяны: -1.00 за клик.
+-- Авакянов 1 на ходах 1-3, 2 на ходах 4-6 и так далее до 8. Время хода сокращается с каждым ходом.
+-- Баллы копятся в игре; вывести можно после 5-го хода (в баланс идёт итог, он может быть и отрицательным).
+-- Если бросить игру, плюс сгорает, а минус остаётся в силе.
+create table if not exists public.whack_games (
+  id          bigint generated always as identity primary key,
+  account_id  bigint not null references public.accounts(id) on delete cascade,
+  turn        int not null default 0,                 -- сыграно ходов
+  total       numeric(14,2) not null default 0,       -- набрано в этой игре (может быть < 0)
+  cells       int[] not null,                         -- раскладка текущего хода: 0 пусто, 1 енот, 2 Авакян
+  round_ms    int not null,
+  round_at    timestamptz not null default now(),
+  status      text not null default 'active' check (status in ('active','cashed','abandoned')),
+  payout      numeric(14,2),
+  created_at  timestamptz not null default now()
+);
+create unique index if not exists whack_games_one_active on public.whack_games (account_id) where status = 'active';
+alter table public.whack_games enable row level security;
+revoke all on public.whack_games from public, anon, authenticated;
+
+create or replace function public._wh_ms(p_turn int) returns int language sql immutable as $$
+  select greatest(550, round(1000 * power(0.94, p_turn)))::int $$;
+
+create or replace function public._wh_cells(p_turn int) returns int[]
+language plpgsql volatile as $$
+declare a int := 0; r int; c int[] := array_fill(0, array[9]); pos int[]; i int;
+begin
+  if random() < 0.5 then a := least(8, 1 + p_turn / 3); end if;
+  r := least(2 + floor(random() * 3)::int, 9 - a);
+  select array_agg(g order by random()) into pos from generate_series(0, 8) g;
+  for i in 1..a loop c[pos[i] + 1] := 2; end loop;
+  for i in a + 1..a + r loop c[pos[i] + 1] := 1; end loop;
+  return c;
+end $$;
+
+-- брошенная игра (нет ответа дольше хода + 20 с): плюс сгорает, минус списывается
+create or replace function public._wh_settle(p_account bigint) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare g public.whack_games; pay numeric;
+begin
+  select * into g from public.whack_games where account_id = p_account and status = 'active' for update;
+  if not found then return; end if;
+  if now() > g.round_at + make_interval(secs => g.round_ms / 1000.0 + 20) then
+    pay := least(0, g.total);
+    update public.whack_games set status = 'abandoned', payout = pay where id = g.id;
+    if pay <> 0 then perform public._credit(p_account, pay, 'whack:abandon:' || g.id); end if;
+  end if;
+end $$;
+
+create or replace function public._wh_json(g public.whack_games) returns json
+language sql security definer set search_path = public, extensions as $$
+  select json_build_object('id', g.id, 'turn', g.turn, 'total', g.total, 'can_cash', g.turn >= 5,
+                           'cells', to_json(g.cells), 'ms', g.round_ms, 'round_at', public._ms(g.round_at)) $$;
+
+create or replace function public.whack_state(p_token text default null) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+declare a public.accounts; g public.whack_games; gj json;
+begin
+  begin a := public._acc(p_token); exception when others then a := null; end;
+  if a.id is not null then
+    perform public._wh_settle(a.id);
+    select * into g from public.whack_games where account_id = a.id and status = 'active';
+    if found then gj := public._wh_json(g); end if;
+    select * into a from public.accounts where id = a.id;
+  end if;
+  return json_build_object('server_now', public._ms(now()), 'game', gj,
+                           'balance', case when a.id is not null then a.balance end);
+end $$;
+
+create or replace function public.whack_start(p_token text) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+declare a public.accounts;
+begin
+  a := public._acc(p_token);
+  select * into a from public.accounts where id = a.id for update;
+  perform public._wh_settle(a.id);
+  if not exists (select 1 from public.whack_games where account_id = a.id and status = 'active') then
+    insert into public.whack_games (account_id, turn, cells, round_ms) values (a.id, 0, public._wh_cells(0), public._wh_ms(0));
+  end if;
+  return public.whack_state(p_token);
+end $$;
+
+-- конец хода: клиент присылает номера клеток (0-8), по которым успел кликнуть
+create or replace function public.whack_turn(p_token text, p_hits int[]) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+declare a public.accounts; g public.whack_games; h int[] := coalesce(p_hits, '{}'); rac int := 0; ava int := 0; i int; d numeric; res jsonb;
+begin
+  a := public._acc(p_token);
+  select * into a from public.accounts where id = a.id for update;
+  perform public._wh_settle(a.id);
+  select * into g from public.whack_games where account_id = a.id and status = 'active' for update;
+  if not found then raise exception 'NO_GAME'; end if;
+  if now() < g.round_at + make_interval(secs => g.round_ms / 1000.0 * 0.9) then raise exception 'TOO_FAST'; end if;
+  if coalesce(array_length(h, 1), 0) > 9
+     or exists (select 1 from unnest(h) x where x < 0 or x > 8 or x is null)
+     or (select count(distinct x) from unnest(h) x) <> coalesce(array_length(h, 1), 0) then
+    raise exception 'BAD_HITS';
+  end if;
+  for i in 1..coalesce(array_length(h, 1), 0) loop
+    if g.cells[h[i] + 1] = 1 then rac := rac + 1; elsif g.cells[h[i] + 1] = 2 then ava := ava + 1; end if;
+  end loop;
+  d := rac * 0.01 - ava * 1.00;
+  update public.whack_games
+     set total = total + d, turn = turn + 1, cells = public._wh_cells(turn + 1), round_ms = public._wh_ms(turn + 1), round_at = now()
+   where id = g.id;
+   if g.turn + 1 >= 12 then
+    update public.whack_games set status = 'cashed', payout = g.total + d where id = g.id;
+    if g.total + d <> 0 then perform public._credit(a.id, g.total + d, 'whack:cash:' || g.id); end if;
+    res := public.whack_state(p_token)::jsonb;
+    return (res || jsonb_build_object('last', jsonb_build_object('raccoons', rac, 'avakyans', ava, 'delta', d),
+                                      'cashed', g.total + d))::json;
+    end if;
+  res := public.whack_state(p_token)::jsonb;
+  return (res || jsonb_build_object('last', jsonb_build_object('raccoons', rac, 'avakyans', ava, 'delta', d)))::json;
+end $$;
+
+-- вывести набранное в баланс (после 5-го хода); итог может быть отрицательным
+create or replace function public.whack_cashout(p_token text) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+declare a public.accounts; g public.whack_games; res jsonb;
+begin
+  a := public._acc(p_token);
+  select * into a from public.accounts where id = a.id for update;
+  perform public._wh_settle(a.id);
+  select * into g from public.whack_games where account_id = a.id and status = 'active' for update;
+  if not found then raise exception 'NO_GAME'; end if;
+  if g.turn < 5 then raise exception 'TOO_EARLY'; end if;
+  update public.whack_games set status = 'cashed', payout = g.total where id = g.id;
+  if g.total <> 0 then perform public._credit(a.id, g.total, 'whack:cash:' || g.id); end if;
+  res := public.whack_state(p_token)::jsonb;
+  return (res || jsonb_build_object('cashed', g.total))::json;
+end $$;
+
+-- ---------------------------------------------------------------------
 --  КТО ЧТО МОЖЕТ ВЫЗЫВАТЬ ИЗ БРАУЗЕРА
 -- ---------------------------------------------------------------------
 revoke all on function
   public._norm(text), public._ms(timestamptz), public._user_json(public.accounts), public._acc(text), public._admin(text),
   public._credit(bigint, numeric, text), public._pick_prize(), public._rg_settle(bigint), public._rg_json(public.rocket_games),
   public._comments_guard(), public._drop_cooldown(), public._reward(text),
-  public._paid_spin_cost(), public._rk_growth(), public._rk_mult(numeric)
+  public._paid_spin_cost(), public._rk_growth(), public._rk_mult(numeric),
+  public._wh_ms(int), public._wh_cells(int), public._wh_settle(bigint), public._wh_json(public.whack_games)
   from public, anon, authenticated;
 
 revoke all on function
   public.auth_login(text, text), public.auth_me(text), public.auth_logout(text),
   public.drop_prizes(), public.drop_config(), public.drop_status(text), public.drop_spin(text, boolean), public.drop_guest_spin(), public.my_inventory(text),
   public.rocket_state(text), public.rocket_launch(text, numeric, numeric), public.rocket_cashout(text),
+  public.whack_state(text), public.whack_start(text), public.whack_turn(text, int[]), public.whack_cashout(text),
   public.forum_post(text, text),
   public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
@@ -596,6 +735,7 @@ grant execute on function
   public.auth_login(text, text), public.auth_me(text), public.auth_logout(text),
   public.drop_prizes(), public.drop_config(), public.drop_status(text), public.drop_spin(text, boolean), public.drop_guest_spin(), public.my_inventory(text),
   public.rocket_state(text), public.rocket_launch(text, numeric, numeric), public.rocket_cashout(text),
+  public.whack_state(text), public.whack_start(text), public.whack_turn(text, int[]), public.whack_cashout(text),
   public.forum_post(text, text),
   public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
