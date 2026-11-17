@@ -23,7 +23,7 @@
       hint.textContent = 'Вы реферал игрока ' + d.referrer + '. Изменить это нельзя.';
     } else {
       form.hidden = false;
-      hint.textContent = 'Ввести код можно один раз, изменить его потом нельзя.';
+      hint.textContent = 'Бонус за ввод кода: +0.67 б. Ввести код можно один раз, изменить его потом нельзя.';
     }
     if (!d.list.length) { listEl.innerHTML = '<p class="ref-empty">Пока никого. Отправьте друзьям свой код.</p>'; return; }
     listEl.innerHTML = '<div class="ref-row head"><span>Игрок</span><span>Ваша прибыль</span></div>' +
@@ -51,7 +51,8 @@
     if (!/^\d{5}$/.test(v)) { setMsg(Ava.errText({ message: 'BAD_CODE' }), 'bad'); return; }
     busy = true; sendBtn.disabled = true; setMsg('');
     Ava.call('ref_set', { p_code: v }).then(function (d) {
-      input.value = ''; render(d); setMsg('Готово: вы стали рефералом ' + d.referrer + '.', 'good');
+      input.value = ''; render(d); setMsg('Готово: вы стали рефералом ' + d.referrer + '. Бонус +0.67' + UNIT + ' зачислен.', 'good');
+      if (d.balance !== undefined && d.balance !== null) Ava.setBalance(d.balance); else if (Ava.refresh) Ava.refresh();
     }, function (err) { setMsg(Ava.errText(err), 'bad'); }).then(function () { busy = false; sendBtn.disabled = false; });
   });
 

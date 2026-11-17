@@ -863,20 +863,6 @@ grant execute on function
   public.admin_adjust_balance(text, bigint, numeric, text)
   to anon, authenticated;
 
-
--- ---------------------------------------------------------------------
---  МИГРАЦИЯ: расширение денежных колонок в уже существующих таблицах
---  (лечит «numeric field overflow»; безопасно запускать повторно)
--- ---------------------------------------------------------------------
-alter table public.accounts      alter column balance type numeric(24,2);
-alter table public.balance_log   alter column delta   type numeric(24,2);
-alter table public.rocket_games  alter column amount  type numeric(24,2),
-                                 alter column payout  type numeric(24,2);
-alter table public.whack_games   alter column total   type numeric(24,2),
-                                 alter column payout  type numeric(24,2);
-alter table public.referrals     alter column earned  type numeric(26,4),
-                                 alter column paid    type numeric(24,2);
-
 notify pgrst, 'reload schema';
 
 -- =====================================================================
