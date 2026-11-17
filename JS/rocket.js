@@ -187,7 +187,7 @@
   }
 
   function startDemo(auto) {
-    var cp = Math.min(200, Math.max(1.01, Math.floor(110 / (1 - Math.random())) / 100));
+    var cp = Math.min(200, Math.max(1.00, Math.floor(115 / (1 - Math.random())) / 100));
     resetFx();
     pokedAuto = false;
     game = { id: 'demo' + Date.now(), demo: true, status: 'active', start: Date.now(), crash_point: cp, amount: 0, auto: auto, mult: null, payout: 0 };
