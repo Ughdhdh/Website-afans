@@ -29,7 +29,7 @@ create table if not exists public.accounts (
   pass_hash     text not null,
   status        text not null default 'pending' check (status in ('pending','approved','blocked')),
   is_admin      boolean not null default false,
-  balance       numeric(14,2) not null default 0,     -- может уходить в минус (игра «Еноты»)
+  balance       numeric(24,2) not null default 0,     -- может уходить в минус (игра «Еноты»)
   note          text,
   last_spin_at  timestamptz,
   created_at    timestamptz not null default now()
@@ -73,7 +73,7 @@ create index if not exists inventory_acc_idx on public.inventory (account_id);
 create table if not exists public.balance_log (
   id         bigint generated always as identity primary key,
   account_id bigint not null references public.accounts(id) on delete cascade,
-  delta      numeric(14,2) not null,
+  delta      numeric(24,2) not null,
   reason     text not null,
   created_at timestamptz not null default now()
 );
@@ -84,14 +84,14 @@ create table if not exists public.balance_log (
 create table if not exists public.rocket_games (
   id           bigint generated always as identity primary key,
   account_id   bigint not null references public.accounts(id) on delete cascade,
-  amount       numeric(14,2) not null check (amount > 0),
+  amount       numeric(24,2) not null check (amount > 0),
   auto_cashout numeric(8,2),
   crash_point  numeric(10,2) not null,       -- СЕКРЕТ: клиенту не отдаётся, пока игра не закончилась
   start_at     timestamptz not null,
   crash_at     timestamptz not null,
   status       text not null default 'active' check (status in ('active','won','lost')),
   cash_mult    numeric(10,2),
-  payout       numeric(14,2) not null default 0,
+  payout       numeric(24,2) not null default 0,
   created_at   timestamptz not null default now()
 );
 create unique index if not exists rocket_games_one_active on public.rocket_games (account_id) where status = 'active';
@@ -156,6 +156,8 @@ $$ select case p_rarity when 'common' then 0.01 when 'rare' then 0.03
                         when 'epic' then 0.06 when 'legendary' then 0.12 else 0 end::numeric $$;
 
 -- Ракета: множитель = exp(рост * секунды). 0.12 => x2 через ~5.8 c, x10 через ~19 c
+-- максимальная ставка в ракете (защита от numeric overflow при огромных выплатах)
+create or replace function public._max_bet() returns numeric language sql immutable as $$ select 1000000000::numeric $$;
 create or replace function public._rk_growth()     returns numeric language sql immutable as $$ select 0.12::numeric $$;
 create or replace function public._rk_mult(p_secs numeric) returns numeric language sql immutable as
 $$ select exp(public._rk_growth() * greatest(p_secs, 0)) $$;
@@ -451,6 +453,7 @@ begin
   a := public._acc(p_token);
   amt := round(coalesce(p_amount, 0), 2);
   if amt < 0.01 then raise exception 'BAD_AMOUNT'; end if;
+  if amt > public._max_bet() then raise exception 'BET_TOO_BIG'; end if;
   if p_auto is not null then
     au := round(p_auto, 2);
     if au < 1.01 or au > 1000 then raise exception 'BAD_AUTO'; end if;
@@ -574,6 +577,7 @@ language plpgsql security definer set search_path = public, extensions as $$
 declare a public.accounts; d numeric := round(coalesce(p_delta, 0), 2);
 begin
   perform public._admin(p_token);
+  if abs(d) > 1000000000000::numeric then raise exception 'BAD_AMOUNT'; end if;
   select * into a from public.accounts where id = p_id for update;
   if not found then raise exception 'NO_ACCOUNT'; end if;
   if a.balance + d < 0 then raise exception 'NO_FUNDS'; end if;
@@ -592,12 +596,12 @@ create table if not exists public.whack_games (
   id          bigint generated always as identity primary key,
   account_id  bigint not null references public.accounts(id) on delete cascade,
   turn        int not null default 0,                 -- сыграно ходов
-  total       numeric(14,2) not null default 0,       -- набрано в этой игре (может быть < 0)
+  total       numeric(24,2) not null default 0,       -- набрано в этой игре (может быть < 0)
   cells       int[] not null,                         -- раскладка текущего хода: 0 пусто, 1 енот, 2 Авакян
   round_ms    int not null,
   round_at    timestamptz not null default now(),
   status      text not null default 'active' check (status in ('active','cashed','abandoned')),
-  payout      numeric(14,2),
+  payout      numeric(24,2),
   created_at  timestamptz not null default now()
 );
 alter table public.whack_games add column if not exists ended_at timestamptz;      -- когда игра закончилась (от этого считается кулдаун)
@@ -771,8 +775,8 @@ create trigger accounts_ref_code before insert on public.accounts for each row e
 create table if not exists public.referrals (
   invitee_id  bigint primary key references public.accounts(id) on delete cascade,   -- один реферер на человека, навсегда
   referrer_id bigint not null references public.accounts(id) on delete cascade,
-  earned      numeric(14,4) not null default 0,       -- сколько бонуса заработано (с долями копейки)
-  paid        numeric(14,2) not null default 0,       -- сколько из этого уже зачислено рефереру
+  earned      numeric(26,4) not null default 0,       -- сколько бонуса заработано (с долями копейки)
+  paid        numeric(24,2) not null default 0,       -- сколько из этого уже зачислено рефереру
   created_at  timestamptz not null default now()
 );
 create index if not exists referrals_referrer on public.referrals (referrer_id);
@@ -819,6 +823,7 @@ begin
   if t.id = a.id then raise exception 'REF_SELF'; end if;
   if exists (select 1 from public.referrals where invitee_id = t.id and referrer_id = a.id) then raise exception 'REF_CYCLE'; end if;
   insert into public.referrals (invitee_id, referrer_id) values (a.id, t.id);
+  perform public._credit(a.id, 0.67, 'ref:welcome');       -- бонус за ввод кода (код вводится один раз, поэтому и бонус один раз)
   return public.ref_info(p_token);
 end $$;
 
@@ -857,6 +862,20 @@ grant execute on function
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
   public.admin_adjust_balance(text, bigint, numeric, text)
   to anon, authenticated;
+
+
+-- ---------------------------------------------------------------------
+--  МИГРАЦИЯ: расширение денежных колонок в уже существующих таблицах
+--  (лечит «numeric field overflow»; безопасно запускать повторно)
+-- ---------------------------------------------------------------------
+alter table public.accounts      alter column balance type numeric(24,2);
+alter table public.balance_log   alter column delta   type numeric(24,2);
+alter table public.rocket_games  alter column amount  type numeric(24,2),
+                                 alter column payout  type numeric(24,2);
+alter table public.whack_games   alter column total   type numeric(24,2),
+                                 alter column payout  type numeric(24,2);
+alter table public.referrals     alter column earned  type numeric(26,4),
+                                 alter column paid    type numeric(24,2);
 
 notify pgrst, 'reload schema';
 

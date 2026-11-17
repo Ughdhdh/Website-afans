@@ -40,6 +40,7 @@
     return e;
   }
   function floor2(x) { return Math.floor(x * 100 + 1e-9) / 100; }
+  var MAX_BET = 1000000000;   // должно совпадать с public._max_bet() в SQL
   function fmt(n) { return Number(n).toFixed(2); }
   var UNIT = ' б.';
   function serverNow() { return Date.now() + offset; }
@@ -87,7 +88,7 @@
 
     function readAmt() { var v = parseFloat(inAmt.value); return isFinite(v) ? v : 0; }
     function setAmt(v) {
-      v = Math.max(0.01, Math.round(v * 100) / 100);
+      v = Math.min(MAX_BET, Math.max(0.01, Math.round(v * 100) / 100));
       inAmt.value = fmt(v); save('rk.amt', v); lastKey = ''; render();
     }
     function readAuto() {
