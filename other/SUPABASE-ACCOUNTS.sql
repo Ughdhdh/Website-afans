@@ -468,7 +468,7 @@ begin
   if a.balance < amt then raise exception 'NO_FUNDS'; end if;
 
   u  := random();
-  cp := least(100, greatest(1.00, floor(110 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
+  cp := least(100, greatest(1.00, floor(98 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
   insert into public.rocket_games (account_id, amount, auto_cashout, crash_point, start_at, crash_at)
   values (a.id, amt, au, cp, now(), now() + make_interval(secs => (ln(cp) / public._rk_growth())::double precision));
   perform public._credit(a.id, -amt, 'rocket:bet');
