@@ -40,7 +40,7 @@
     return e;
   }
   function floor2(x) { return Math.floor(x * 100 + 1e-9) / 100; }
-  var MAX_BET = 1000000000;   // должно совпадать с public._max_bet() в SQL
+  var MAX_BET = 500;   // должно совпадать с public._max_bet() в SQL
   function fmt(n) { return Number(n).toFixed(2); }
   var UNIT = ' б.';
   function serverNow() { return Date.now() + offset; }
@@ -60,7 +60,7 @@
     var lAuto = el('label'); var cbAuto = el('input'); cbAuto.type = 'checkbox';
     lAuto.appendChild(cbAuto); lAuto.appendChild(document.createTextNode('Автовывод'));
     var av = el('span', 'auto-val'); av.appendChild(document.createTextNode('x'));
-    var inAuto = el('input'); inAuto.type = 'number'; inAuto.min = '1.01'; inAuto.step = '0.01'; inAuto.inputMode = 'decimal';
+    var inAuto = el('input'); inAuto.type = 'number'; inAuto.min = '1.5'; inAuto.step = '0.01'; inAuto.inputMode = 'decimal';
     av.appendChild(inAuto);
     top.appendChild(lAuto); top.appendChild(av);
 
@@ -82,8 +82,8 @@
     main.appendChild(box); main.appendChild(go);
     root.appendChild(top); root.appendChild(main);
 
-    inAmt.value = fmt(load('rk.amt', 0.01));
-    inAuto.value = fmt(load('rk.autoval', 2));
+    inAmt.value = fmt(Math.min(MAX_BET, Math.max(0.01, Number(load('rk.amt', 0.01)) || 0.01)));
+    inAuto.value = fmt(Math.max(1.5, Number(load('rk.autoval', 2)) || 2));
     cbAuto.checked = !!load('rk.auto', false);
 
     function readAmt() { var v = parseFloat(inAmt.value); return isFinite(v) ? v : 0; }
@@ -99,7 +99,7 @@
     bMinus.addEventListener('click', function () { setAmt(readAmt() - 0.01); });
     bPlus.addEventListener('click', function () { setAmt(readAmt() + 0.01); });
     inAmt.addEventListener('change', function () { setAmt(readAmt() || 0.01); });
-    inAuto.addEventListener('change', function () { var v = Math.max(1.01, parseFloat(inAuto.value) || 2); inAuto.value = fmt(v); save('rk.autoval', v); });
+    inAuto.addEventListener('change', function () { var v = Math.max(1.5, parseFloat(inAuto.value) || 2); inAuto.value = fmt(v); save('rk.autoval', v); });
     cbAuto.addEventListener('change', function () { save('rk.auto', cbAuto.checked); });
 
     go.addEventListener('click', function () {
@@ -162,8 +162,9 @@
   function launch(amt, auto, autoOn) {
     if (busy) return;
     setMsg('');
-    if (autoOn && (auto === null || auto < 1.01)) { setMsg(Ava.errText({ message: 'BAD_AUTO' })); return; }
+    if (autoOn && (auto === null || auto < 1.5)) { setMsg(Ava.errText({ message: 'BAD_AUTO' })); return; }
     if (!Ava.user) { startDemo(auto); return; }
+    if (amt > MAX_BET) { setMsg(Ava.errText({ message: 'BET_TOO_BIG' })); return; }
     busy = true; panel.force();
     Ava.call('rocket_launch', { p_amount: amt, p_auto: auto }).then(function (s) {
       onState(s, Date.now(), Date.now(), true);
@@ -188,7 +189,7 @@
   }
 
   function startDemo(auto) {
-    var cp = Math.min(100, Math.max(1.00, Math.floor(98 / (1 - Math.random())) / 100));
+    var cp = Math.min(100, Math.max(1.00, Math.floor(92 / (1 - Math.random())) / 100));
     resetFx();
     pokedAuto = false;
     game = { id: 'demo' + Date.now(), demo: true, status: 'active', start: Date.now(), crash_point: cp, amount: 0, auto: auto, mult: null, payout: 0 };

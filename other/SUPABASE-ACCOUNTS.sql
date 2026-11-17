@@ -157,7 +157,7 @@ $$ select case p_rarity when 'common' then 0.01 when 'rare' then 0.03
 
 -- Ракета: множитель = exp(рост * секунды). 0.12 => x2 через ~5.8 c, x10 через ~19 c
 -- максимальная ставка в ракете (защита от numeric overflow при огромных выплатах)
-create or replace function public._max_bet() returns numeric language sql immutable as $$ select 1000000000::numeric $$;
+create or replace function public._max_bet() returns numeric language sql immutable as $$ select 500::numeric $$;
 create or replace function public._rk_growth()     returns numeric language sql immutable as $$ select 0.12::numeric $$;
 create or replace function public._rk_mult(p_secs numeric) returns numeric language sql immutable as
 $$ select exp(public._rk_growth() * greatest(p_secs, 0)) $$;
@@ -456,7 +456,7 @@ begin
   if amt > public._max_bet() then raise exception 'BET_TOO_BIG'; end if;
   if p_auto is not null then
     au := round(p_auto, 2);
-    if au < 1.01 or au > 1000 then raise exception 'BAD_AUTO'; end if;
+    if au < 1.5 or au > 100 then raise exception 'BAD_AUTO'; end if;
   end if;
 
   select * into a from public.accounts where id = a.id for update;     -- защита от двойного запуска
@@ -468,7 +468,7 @@ begin
   if a.balance < amt then raise exception 'NO_FUNDS'; end if;
 
   u  := random();
-  cp := least(100, greatest(1.00, floor(98 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
+  cp := least(100, greatest(1.00, floor(92 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
   insert into public.rocket_games (account_id, amount, auto_cashout, crash_point, start_at, crash_at)
   values (a.id, amt, au, cp, now(), now() + make_interval(secs => (ln(cp) / public._rk_growth())::double precision));
   perform public._credit(a.id, -amt, 'rocket:bet');
