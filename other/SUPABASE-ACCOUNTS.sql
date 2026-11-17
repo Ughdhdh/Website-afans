@@ -337,6 +337,7 @@ begin
   insert into public.inventory (account_id, prize_id) values (a.id, p.id);
   if p_paid then perform public._credit(a.id, -cost, 'drop:paid'); end if;
   perform public._credit(a.id, rew, 'drop:' || p.id);
+  perform public._ref_bonus(a.id, rew - cost);                          -- 7% рефереру с прибыли
   return json_build_object('ok', true, 'paid', p_paid,
     'prize', json_build_object('id', p.id, 'name', p.name, 'rarity', p.rarity, 'img', p.img, 'reward', rew),
     'balance', a.balance - cost + rew,
@@ -399,6 +400,7 @@ begin
       pay := floor(g.amount * g.auto_cashout * 100) / 100;
       update public.rocket_games set status = 'won', cash_mult = g.auto_cashout, payout = pay where id = g.id;
       perform public._credit(g.account_id, pay, 'rocket:win:' || g.id);
+      perform public._ref_bonus(g.account_id, pay - g.amount);
     else
       update public.rocket_games set status = 'lost' where id = g.id;
     end if;
@@ -408,6 +410,7 @@ begin
       pay := floor(g.amount * g.auto_cashout * 100) / 100;
       update public.rocket_games set status = 'won', cash_mult = g.auto_cashout, payout = pay where id = g.id;
       perform public._credit(g.account_id, pay, 'rocket:win:' || g.id);
+      perform public._ref_bonus(g.account_id, pay - g.amount);
     end if;
   end if;
 end $$;
@@ -430,7 +433,11 @@ begin
     select * into a from public.accounts where id = a.id;              -- свежий баланс
   end if;
   select coalesce(json_agg(cp order by id desc), '[]'::json) into hist
-    from (select id, crash_point as cp from public.rocket_games where crash_at <= now() order by id desc limit 14) h;
+    from (select id,                                   -- результат вывода: где игрок забрал, иначе где самолёт упал
+                 case when status = 'won' then cash_mult
+                      when status = 'active' and auto_cashout is not null and auto_cashout < crash_point then auto_cashout   -- автовывод ещё не оформлен
+                      else crash_point end as cp
+            from public.rocket_games where crash_at <= now() order by id desc limit 14) h;
   return json_build_object('server_now', public._ms(now()), 'growth', public._rk_growth(),
                            'game', gj, 'history', hist,
                            'balance', case when a.id is not null then a.balance end);
@@ -479,6 +486,7 @@ begin
     pay := floor(g.amount * cur * 100) / 100;
     update public.rocket_games set status = 'won', cash_mult = cur, payout = pay where id = g.id;
     perform public._credit(a.id, pay, 'rocket:win:' || g.id);
+    perform public._ref_bonus(a.id, pay - g.amount);
   end if;
   return public.rocket_state(p_token);
 end $$;
@@ -592,12 +600,24 @@ create table if not exists public.whack_games (
   payout      numeric(14,2),
   created_at  timestamptz not null default now()
 );
+alter table public.whack_games add column if not exists ended_at timestamptz;      -- когда игра закончилась (от этого считается кулдаун)
 create unique index if not exists whack_games_one_active on public.whack_games (account_id) where status = 'active';
+
+-- Кулдаун между играми «Еноты»
+create or replace function public._wh_cooldown() returns interval language sql immutable as
+$$ select interval '10 minutes' $$;
+
+-- когда игроку снова можно играть (null, если уже можно)
+create or replace function public._wh_next_at(p_account bigint) returns timestamptz
+language sql stable security definer set search_path = public, extensions as $$
+  select case when t > now() then t end
+  from (select max(coalesce(ended_at, round_at)) + public._wh_cooldown() as t
+          from public.whack_games where account_id = p_account and status <> 'active') x $$;
 alter table public.whack_games enable row level security;
 revoke all on public.whack_games from public, anon, authenticated;
 
 create or replace function public._wh_ms(p_turn int) returns int language sql immutable as $$
-  select greatest(550, round(1000 * power(0.94, p_turn)))::int $$;
+  select greatest(450, round(900 * power(0.90, p_turn)))::int $$;
 
 create or replace function public._wh_cells(p_turn int) returns int[]
 language plpgsql volatile as $$
@@ -620,7 +640,8 @@ begin
   if not found then return; end if;
   if now() > g.round_at + make_interval(secs => g.round_ms / 1000.0 + 20) then
     pay := least(0, g.total);
-    update public.whack_games set status = 'abandoned', payout = pay where id = g.id;
+    update public.whack_games set status = 'abandoned', payout = pay,
+           ended_at = g.round_at + make_interval(secs => g.round_ms / 1000.0) where id = g.id;
     if pay <> 0 then perform public._credit(p_account, pay, 'whack:abandon:' || g.id); end if;
   end if;
 end $$;
@@ -642,6 +663,7 @@ begin
     select * into a from public.accounts where id = a.id;
   end if;
   return json_build_object('server_now', public._ms(now()), 'game', gj,
+                           'next_at', case when a.id is not null and gj is null then public._ms(public._wh_next_at(a.id)) end,
                            'balance', case when a.id is not null then a.balance end);
 end $$;
 
@@ -653,6 +675,7 @@ begin
   select * into a from public.accounts where id = a.id for update;
   perform public._wh_settle(a.id);
   if not exists (select 1 from public.whack_games where account_id = a.id and status = 'active') then
+    if public._wh_next_at(a.id) is not null then raise exception 'WH_COOLDOWN'; end if;      -- кулдаун ещё идёт
     insert into public.whack_games (account_id, turn, cells, round_ms) values (a.id, 0, public._wh_cells(0), public._wh_ms(0));
   end if;
   return public.whack_state(p_token);
@@ -682,8 +705,9 @@ begin
      set total = total + d, turn = turn + 1, cells = public._wh_cells(turn + 1), round_ms = public._wh_ms(turn + 1), round_at = now()
    where id = g.id;
    if g.turn + 1 >= 12 then
-    update public.whack_games set status = 'cashed', payout = g.total + d where id = g.id;
+    update public.whack_games set status = 'cashed', payout = g.total + d, ended_at = now() where id = g.id;
     if g.total + d <> 0 then perform public._credit(a.id, g.total + d, 'whack:cash:' || g.id); end if;
+    perform public._ref_bonus(a.id, g.total + d);
     res := public.whack_state(p_token)::jsonb;
     return (res || jsonb_build_object('last', jsonb_build_object('raccoons', rac, 'avakyans', ava, 'delta', d),
                                       'cashed', g.total + d))::json;
@@ -703,10 +727,99 @@ begin
   select * into g from public.whack_games where account_id = a.id and status = 'active' for update;
   if not found then raise exception 'NO_GAME'; end if;
   if g.turn < 5 then raise exception 'TOO_EARLY'; end if;
-  update public.whack_games set status = 'cashed', payout = g.total where id = g.id;
+  update public.whack_games set status = 'cashed', payout = g.total, ended_at = now() where id = g.id;
   if g.total <> 0 then perform public._credit(a.id, g.total, 'whack:cash:' || g.id); end if;
+  perform public._ref_bonus(a.id, g.total);
   res := public.whack_state(p_token)::jsonb;
   return (res || jsonb_build_object('cashed', g.total))::json;
+end $$;
+
+-- ---------------------------------------------------------------------
+--  РЕФЕРАЛЫ: у каждого аккаунта свой код из 5 цифр; ввести можно один код, один раз, менять нельзя.
+--  Реферер получает 7% от прибыли реферала (выигрыш рулетки, чистый выигрыш ракеты, итог «Енотов»).
+--  Бонус платит система, у реферала ничего не вычитается. Убытки реферала бонус не уменьшают.
+-- ---------------------------------------------------------------------
+alter table public.accounts add column if not exists ref_code text;
+
+create or replace function public._ref_gen() returns text
+language plpgsql volatile as $$
+declare c text;
+begin
+  loop
+    c := (10000 + floor(random() * 90000))::int::text;
+    exit when not exists (select 1 from public.accounts where ref_code = c);
+  end loop;
+  return c;
+end $$;
+
+do $$ declare r record;
+begin
+  for r in select id from public.accounts where ref_code is null loop
+    update public.accounts set ref_code = public._ref_gen() where id = r.id;
+  end loop;
+end $$;
+create unique index if not exists accounts_ref_code_key on public.accounts (ref_code);
+
+create or replace function public._ref_assign() returns trigger language plpgsql as $$
+begin
+  if new.ref_code is null then new.ref_code := public._ref_gen(); end if;
+  return new;
+end $$;
+drop trigger if exists accounts_ref_code on public.accounts;
+create trigger accounts_ref_code before insert on public.accounts for each row execute function public._ref_assign();
+
+create table if not exists public.referrals (
+  invitee_id  bigint primary key references public.accounts(id) on delete cascade,   -- один реферер на человека, навсегда
+  referrer_id bigint not null references public.accounts(id) on delete cascade,
+  earned      numeric(14,4) not null default 0,       -- сколько бонуса заработано (с долями копейки)
+  paid        numeric(14,2) not null default 0,       -- сколько из этого уже зачислено рефереру
+  created_at  timestamptz not null default now()
+);
+create index if not exists referrals_referrer on public.referrals (referrer_id);
+alter table public.referrals enable row level security;
+revoke all on public.referrals from public, anon, authenticated;
+
+-- начислить рефереру 7% с прибыли (p_profit <= 0 ничего не делает)
+create or replace function public._ref_bonus(p_account bigint, p_profit numeric) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare r public.referrals; due numeric;
+begin
+  if p_profit is null or p_profit <= 0 then return; end if;
+  select * into r from public.referrals where invitee_id = p_account for update;
+  if not found then return; end if;
+  r.earned := r.earned + p_profit * 0.07;
+  due := floor((r.earned - r.paid) * 100) / 100;          -- в баланс идут целые сотые, остаток копится
+  update public.referrals set earned = r.earned, paid = paid + greatest(due, 0) where invitee_id = p_account;
+  if due > 0 then perform public._credit(r.referrer_id, due, 'ref:' || p_account); end if;
+end $$;
+
+create or replace function public.ref_info(p_token text) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+declare a public.accounts; ref text; lst json; tot numeric;
+begin
+  a := public._acc(p_token);
+  select a2.login into ref from public.referrals r join public.accounts a2 on a2.id = r.referrer_id where r.invitee_id = a.id;
+  select coalesce(json_agg(json_build_object('login', x.login, 'earned', round(r.earned, 2), 'since', public._ms(r.created_at))
+                           order by r.earned desc, r.created_at), '[]'::json), coalesce(sum(r.earned), 0)
+    into lst, tot
+    from public.referrals r join public.accounts x on x.id = r.invitee_id where r.referrer_id = a.id;
+  return json_build_object('code', a.ref_code, 'referrer', ref, 'rate', 0.07, 'total', round(tot, 2), 'list', lst);
+end $$;
+
+create or replace function public.ref_set(p_token text, p_code text) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+declare a public.accounts; t public.accounts; c text := btrim(coalesce(p_code, ''));
+begin
+  a := public._acc(p_token);
+  select * into a from public.accounts where id = a.id for update;
+  if c !~ '^[0-9]{5}$' then raise exception 'BAD_CODE'; end if;
+  if exists (select 1 from public.referrals where invitee_id = a.id) then raise exception 'REF_EXISTS'; end if;
+  select * into t from public.accounts where ref_code = c and status = 'approved';
+  if not found then raise exception 'NO_CODE'; end if;
+  if t.id = a.id then raise exception 'REF_SELF'; end if;
+  if exists (select 1 from public.referrals where invitee_id = t.id and referrer_id = a.id) then raise exception 'REF_CYCLE'; end if;
+  insert into public.referrals (invitee_id, referrer_id) values (a.id, t.id);
+  return public.ref_info(p_token);
 end $$;
 
 -- ---------------------------------------------------------------------
@@ -717,7 +830,8 @@ revoke all on function
   public._credit(bigint, numeric, text), public._pick_prize(), public._rg_settle(bigint), public._rg_json(public.rocket_games),
   public._comments_guard(), public._drop_cooldown(), public._reward(text),
   public._paid_spin_cost(), public._rk_growth(), public._rk_mult(numeric),
-  public._wh_ms(int), public._wh_cells(int), public._wh_settle(bigint), public._wh_json(public.whack_games)
+  public._wh_cooldown(), public._wh_next_at(bigint), public._wh_ms(int), public._wh_cells(int), public._wh_settle(bigint), public._wh_json(public.whack_games),
+  public._ref_gen(), public._ref_assign(), public._ref_bonus(bigint, numeric)
   from public, anon, authenticated;
 
 revoke all on function
@@ -725,6 +839,7 @@ revoke all on function
   public.drop_prizes(), public.drop_config(), public.drop_status(text), public.drop_spin(text, boolean), public.drop_guest_spin(), public.my_inventory(text),
   public.rocket_state(text), public.rocket_launch(text, numeric, numeric), public.rocket_cashout(text),
   public.whack_state(text), public.whack_start(text), public.whack_turn(text, int[]), public.whack_cashout(text),
+  public.ref_info(text), public.ref_set(text, text),
   public.forum_post(text, text),
   public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
@@ -736,6 +851,7 @@ grant execute on function
   public.drop_prizes(), public.drop_config(), public.drop_status(text), public.drop_spin(text, boolean), public.drop_guest_spin(), public.my_inventory(text),
   public.rocket_state(text), public.rocket_launch(text, numeric, numeric), public.rocket_cashout(text),
   public.whack_state(text), public.whack_start(text), public.whack_turn(text, int[]), public.whack_cashout(text),
+  public.ref_info(text), public.ref_set(text, text),
   public.forum_post(text, text),
   public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),

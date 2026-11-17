@@ -10,7 +10,9 @@
     raccoon: 'img/raccoon.png',        // ваш енот: PNG с прозрачным фоном (можно просто заменить файл)
     avakyan: 'img/avakyan-face.png'    // Авакян
   };
-  var PAUSE_MS = 450;                  // пауза между ходами
+  var APPEAR_MS = 450;                 // сколько длится появление енотов до начала раунда (бить нельзя); больше, чем анимация в CSS
+  var APPEAR_SPREAD_MS = 120;          // разброс начала появления между клетками
+  var PAUSE_MS = 500;                  // пауза между раундами: еноты прячутся (бить нельзя)
   var MIN_CASH_TURNS = 5;              // после какого хода можно выводить (должно совпадать с SQL)
   // =====================================================
 
@@ -26,6 +28,29 @@
   var running = false, busy = false, cashPending = false;
   var hits = [], endTimer = null, nextTimer = null;
   var cur = { cells: [], ms: 0 };
+  var nextAt = 0, cdTimer = null;      // местное время (мс), когда закончится кулдаун между играми
+
+  function cooling() { return !demo && !!Ava.user && !game && nextAt > Date.now(); }
+  function leftText() {
+    var sec = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000)), m = Math.floor(sec / 60), r = sec % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+  function tickCooldown() {
+    var left = nextAt - Date.now();
+    if (nextAt && left <= 0) {
+      nextAt = 0; clearInterval(cdTimer);
+      if (!game && !demo) { setMsg(''); if (overTitle.textContent === 'Еноты отдыхают') showOver('Ударь енота', 'Нажмите «Играть». Еноты +0.01, Авакян −1.'); }
+      paintButtons(); return;
+    }
+    if (cooling()) setMsg('Следующая игра через ' + leftText());
+    paintButtons();
+  }
+  // кулдаун из ответа сервера (next_at считается по часам сервера)
+  function setCooldown(s) {
+    clearInterval(cdTimer);
+    nextAt = s && s.next_at ? Date.now() + (s.next_at - s.server_now) : 0;
+    if (nextAt) { tickCooldown(); cdTimer = setInterval(tickCooldown, 1000); } else paintButtons();
+  }
 
   function fmt(n) { return Number(n).toFixed(2); }
   function sgn(n) { return (n > 0 ? '+' : (n < 0 ? '−' : '')) + fmt(Math.abs(n)); }
@@ -44,7 +69,7 @@
   }
 
   // ----- правила демо (те же, что на сервере) -----
-  function demoMs(turn) { return Math.max(550, Math.round(1000 * Math.pow(0.94, turn))); }
+  function demoMs(turn) { return Math.max(450, Math.round(900 * Math.pow(0.90, turn))); }
   function demoCells(turn) {
     var c = [0, 0, 0, 0, 0, 0, 0, 0, 0], a = 0, pos = [0, 1, 2, 3, 4, 5, 6, 7, 8], k;
     if (Math.random() < 0.5) a = Math.min(8, 1 + Math.floor(turn / 3));
@@ -71,8 +96,8 @@
   function paintButtons() {
     var inGame = !!game;
     startBtn.hidden = inGame && !paused;
-    startBtn.disabled = busy;
-    startBtn.textContent = paused ? 'Продолжить' : (Ava.user ? 'Играть' : 'Демо-игра');
+    startBtn.disabled = busy || cooling();
+    startBtn.textContent = paused ? 'Продолжить' : (cooling() ? 'Через ' + leftText() : (Ava.user ? 'Играть' : 'Демо-игра'));
     var can = inGame && !demo && game.canCash;
     cashBtn.hidden = !inGame || demo;
     cashBtn.disabled = busy || !can || cashPending;
@@ -85,13 +110,14 @@
   var paused = false;
 
   function clearBoard() {
-    cells.forEach(function (c) { c.className = 'wh-cell'; c.querySelector('.wh-fx').textContent = ''; });
+    cells.forEach(function (c) { c.className = 'wh-cell'; var f = c.querySelector('.wh-fx'); f.textContent = ''; f.className = 'wh-fx'; });
     timerEl.style.transition = 'none'; timerEl.style.width = '0%';
   }
 
+  // ход: 1) еноты вылезают (бить нельзя), 2) идёт раунд (бить можно), 3) раунд кончился, еноты прячутся (бить нельзя)
   function startRound(c, ms, remaining) {
     clearTimeout(endTimer); clearTimeout(nextTimer);
-    cur = { cells: c, ms: ms }; hits = []; running = true; paused = false;
+    cur = { cells: c, ms: ms }; hits = []; running = false; paused = false;
     clearBoard(); hideOver(); paintStats(); paintButtons();
     c.forEach(function (kind, i) {
       if (!kind) return;
@@ -99,16 +125,26 @@
       cell.querySelector('img').src = kind === 2 ? IMG.avakyan : IMG.raccoon;
       cell.classList.add(kind === 2 ? 'ava' : 'rac');
       // небольшая случайная задержка выхода, чтобы появлялись не строго одновременно
-      setTimeout(function () { if (running && cur.cells === c) cell.classList.add('up'); }, Math.random() * 120);
+      setTimeout(function () { if (cur.cells === c) cell.classList.add('up'); }, Math.random() * APPEAR_SPREAD_MS);
     });
-    // полоса времени
-    void timerEl.offsetWidth;
+    // полная полоса времени стоит, пока еноты вылезают
     timerEl.style.transition = 'none';
     timerEl.style.width = (remaining / ms * 100) + '%';
-    void timerEl.offsetWidth;
-    timerEl.style.transition = 'width ' + remaining + 'ms linear';
-    timerEl.style.width = '0%';
-    endTimer = setTimeout(endRound, remaining);
+    endTimer = setTimeout(function () {
+      if (cur.cells !== c) return;
+      running = true;                                   // раунд начался: теперь по енотам можно кликать
+      void timerEl.offsetWidth;
+      timerEl.style.transition = 'width ' + remaining + 'ms linear';
+      timerEl.style.width = '0%';
+      endTimer = setTimeout(endRound, remaining);
+    }, APPEAR_MS);
+  }
+
+  // запуск анимации «+0.01»: сбрасываем класс и перезапускаем CSS-анимацию (иначе в повторно задетой клетке она не играет)
+  function popFx(fx, kind) {
+    fx.className = 'wh-fx';
+    void fx.offsetWidth;
+    fx.className = 'wh-fx ' + kind;
   }
 
   function hit(i) {
@@ -116,10 +152,10 @@
     hits.push(i);
     var cell = cells[i], fx = cell.querySelector('.wh-fx');
     if (cur.cells[i] === 1) {
-      cell.classList.add('hit'); fx.textContent = '+0.01'; fx.className = 'wh-fx good';
+      cell.classList.add('hit'); fx.textContent = '+0.01'; popFx(fx, 'good');
       game.total = Math.round((game.total + 0.01) * 100) / 100;
     } else {
-      cell.classList.add('bad'); fx.textContent = '−1'; fx.className = 'wh-fx evil';
+      cell.classList.add('bad'); fx.textContent = '−1'; popFx(fx, 'evil');
       game.total = Math.round((game.total - 1) * 100) / 100;
     }
     paintStats();
@@ -143,6 +179,7 @@
           var c = Number(s.cashed);
           gameOver('Игра окончена: ' + sgn(c) + UNIT, 'Баланс: ' + fmt(s.balance) + UNIT);
         } else gameOver('Игра закончилась', 'Вы слишком долго не отвечали.');
+        setCooldown(s);
         return;
       }
       afterTurn({ turn: g.turn, total: Number(g.total), canCash: !!g.can_cash, cells: g.cells, ms: g.ms }, s.last);
@@ -174,7 +211,7 @@
 
   // ----- кнопки -----
   function begin() {
-    if (busy) return;
+    if (busy || cooling()) return;
     setMsg('');
     if (!Ava.user) {                // демо для гостей
       demo = true; game = { turn: 0, total: 0, canCash: false };
@@ -187,7 +224,10 @@
       if (s.balance !== null && s.balance !== undefined) Ava.setBalance(s.balance);
       var g = s.game; if (!g) { paintButtons(); return; }
       resume(s);
-    }, function (e) { busy = false; setMsg(Ava.errText(e), 'bad'); paintButtons(); });
+    }, function (e) {
+      busy = false; setMsg(Ava.errText(e), 'bad'); paintButtons();
+      if (e.message === 'WH_COOLDOWN') Ava.call('whack_state').then(setCooldown, function () {});   // узнаём, сколько ждать
+    });
   }
 
   // запустить (или продолжить) ход по ответу сервера
@@ -210,6 +250,7 @@
       var c = Number(s.cashed);
       gameOver(c >= 0 ? 'Выведено ' + sgn(c) + UNIT : 'Списано ' + sgn(c) + UNIT, 'Баланс: ' + fmt(s.balance) + UNIT);
       setMsg('');
+      setCooldown(s);
     }, function (e) {
       busy = false; setMsg(Ava.errText(e), 'bad');
       if (e.message === 'NO_GAME') gameOver('Игра закончилась', Ava.errText(e)); else { paintButtons(); nextTimer = setTimeout(function () { startRound(game.cells, game.ms, game.ms); }, PAUSE_MS); }
@@ -234,6 +275,7 @@
     lastUser = id;
     clearTimeout(endTimer); clearTimeout(nextTimer);
     running = false; busy = false; cashPending = false; demo = false; game = null; paused = false;
+    clearInterval(cdTimer); nextAt = 0;
     clearBoard(); paintStats();
     if (!u) { showOver('Ударь енота', 'Войдите в аккаунт, чтобы играть на баллы. Демо-игра доступна всем.'); paintButtons(); return; }
     Ava.rpc('whack_state', { p_token: Ava.token || null }).then(function (s) {
@@ -241,7 +283,8 @@
         game = { turn: s.game.turn, total: Number(s.game.total), canCash: !!s.game.can_cash };
         paused = true; paintStats(); paintButtons();
         showOver('Игра не закончена', 'Ход ' + (s.game.turn + 1) + ', в игре ' + fmt(s.game.total) + UNIT + '. Нажмите «Продолжить».');
-      } else { showOver('Ударь енота', 'Нажмите «Играть». Еноты +0.01, Авакян −1.'); paintButtons(); }
+      } else if (s.next_at) { setCooldown(s); showOver('Еноты отдыхают', 'Следующая игра станет доступна после кулдауна (таймер внизу).'); }
+      else { showOver('Ударь енота', 'Нажмите «Играть». Еноты +0.01, Авакян −1.'); paintButtons(); }
     }, function () { showOver('Ударь енота', 'Нажмите «Играть».'); paintButtons(); });
   });
 })();

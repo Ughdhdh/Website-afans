@@ -19,6 +19,7 @@
             <a href="#rocket">Самолёт</a>
             <a href="#whack">Еноты</a>
             <a href="#inventory">Инвентарь</a>
+            <a href="#referrals">Рефералы</a>
         </nav>
         <div class="top-right">
             <div id="accMount"></div>
@@ -113,6 +114,38 @@
             <div class="inv-grid" id="invGrid"></div>
         </section>
 
+        <!-- ===== РЕФЕРАЛЫ ===== -->
+        <section id="referrals" class="panel ref" aria-label="Рефералы">
+            <div class="inv-head">
+                <h2>Рефералы</h2>
+                <span class="inv-total" id="refTotal"></span>
+            </div>
+            <p class="ref-guest" id="refGuest">Войдите в аккаунт, чтобы получить реферальный код.</p>
+            <div id="refBody" hidden>
+                <div class="ref-top">
+                    <div class="ref-mine">
+                        <span class="ref-label">Ваш код</span>
+                        <div class="ref-code-row">
+                            <b class="ref-code" id="refCode">-----</b>
+                            <button type="button" class="ref-btn ghost" id="refCopy">Копировать</button>
+                        </div>
+                        <span class="ref-hint">Друг вводит его у себя, а вы получаете 7% от его прибыли.</span>
+                    </div>
+                    <div class="ref-enter">
+                        <span class="ref-label">Код пригласившего</span>
+                        <form class="ref-form" id="refForm" autocomplete="off">
+                            <input id="refInput" inputmode="numeric" maxlength="5" placeholder="12345" pattern="[0-9]{5}">
+                            <button type="submit" class="ref-btn" id="refSend">Принять</button>
+                        </form>
+                        <span class="ref-hint" id="refHint">Ввести код можно один раз, изменить его потом нельзя.</span>
+                    </div>
+                </div>
+                <h3 class="ref-sub">Ваши рефералы</h3>
+                <div class="ref-list" id="refList"></div>
+                <p class="ref-msg" id="refMsg" role="status"></p>
+            </div>
+        </section>
+
     </main>
 
     <footer class="foot">
@@ -123,5 +156,6 @@
     <script src="JS/avadrop.js"></script>
     <script src="JS/rocket.js"></script>
     <script src="JS/whack.js"></script>
+    <script src="JS/referral.js"></script>
 </body>
 </html>
