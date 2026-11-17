@@ -81,6 +81,28 @@
       return a;
     } catch (e) { return null; }
   }
+  // прослушать звук предмета из инвентаря (кнопка ▶ на карточке; только для предметов, которые у игрока есть)
+  var invAudio = null, invBtn = null;
+  function stopPreview() {
+    if (invAudio) { try { invAudio.pause(); invAudio.currentTime = 0; } catch (e) {} }
+    if (invBtn) { invBtn.textContent = '\u25B6'; invBtn.classList.remove('on'); }
+    invAudio = null; invBtn = null;
+  }
+  function previewSound(it, btn) {
+    var same = invBtn === btn;
+    stopPreview();
+    if (same) return;                                   // повторное нажатие: стоп
+    try {
+      var a = new Audio(CONFIG.sounds.prize(it));
+      a.volume = 0.8;
+      invAudio = a; invBtn = btn;
+      btn.textContent = '\u25A0'; btn.classList.add('on');
+      a.addEventListener('ended', function () { if (invAudio === a) stopPreview(); });
+      a.addEventListener('error', function () { if (invAudio === a) stopPreview(); });   // файла нет
+      var pr = a.play();
+      if (pr && pr.catch) pr.catch(function () { if (invAudio === a) stopPreview(); });
+    } catch (e) { stopPreview(); }
+  }
   function startSpinSound() { stopSpinSound(); spinAudio = play(CONFIG.sounds.spin); }
   function stopSpinSound() {
     if (spinAudio) { try { spinAudio.pause(); spinAudio.currentTime = 0; } catch (e) {} spinAudio = null; }
@@ -219,7 +241,7 @@
     var left = nextAt - Date.now();
     if (left <= 0) { unlock(); return; }
     var h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
-    note.textContent = 'Бесплатная крутка через ' + pad(h) + ':' + pad(m) + ':' + pad(s);
+    note.textContent = 'Бесплатно через ' + pad(h) + ':' + pad(m) + ':' + pad(s);
   }
   function lock(untilMs) {
     nextAt = untilMs;
@@ -354,6 +376,7 @@
 
   // ===================== инвентарь =====================
   function loadInventory() {
+    stopPreview();
     invGrid.textContent = '';
     if (!Ava.user) {
       invTotal.textContent = '';
@@ -367,7 +390,16 @@
       inv.items.forEach(function (it) {
         var c = el('div', 'inv-card rar-' + it.rarity + (it.count ? '' : ' none'));
         if (it.count) c.appendChild(el('span', 'cnt', '×' + it.count));
-        c.appendChild(pic(it));
+        var pbtn = null;
+        if (it.count) {                                   // звук доступен только для имеющихся предметов
+          var pb = el('button', 'inv-play', '\u25B6');
+          pb.type = 'button'; pb.title = 'Проиграть звук'; pb.setAttribute('aria-label', 'Проиграть звук: ' + it.name);
+          pb.addEventListener('click', function () { previewSound(it, pb); });
+          pbtn = pb;
+        }
+        var pc = pic(it);
+        if (pbtn) pc.appendChild(pbtn);                    // кнопка внутри картинки, в правом нижнем углу
+        c.appendChild(pc);
         c.appendChild(el('span', '', it.count ? it.name : '???'));
         c.appendChild(el('span', 'rn', RARITY_RU[it.rarity]));
         invGrid.appendChild(c);

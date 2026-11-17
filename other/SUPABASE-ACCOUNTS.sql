@@ -57,7 +57,7 @@ create table if not exists public.prizes (
   id     int primary key,
   name   text not null,
   rarity text not null check (rarity in ('common','rare','epic','legendary')),
-  weight int  not null check (weight > 0),   -- относительный шанс выпадения
+  weight numeric(10,2) not null check (weight > 0),   -- относительный шанс выпадения (можно дробный: 0.01)
   img    text,                               -- путь к картинке на сайте
   active boolean not null default true
 );
@@ -162,6 +162,7 @@ create or replace function public._rk_growth()     returns numeric language sql 
 create or replace function public._rk_mult(p_secs numeric) returns numeric language sql immutable as
 $$ select exp(public._rk_growth() * greatest(p_secs, 0)) $$;
 
+alter table public.prizes alter column weight type numeric(10,2);   -- если таблица осталась от версии с целым шансом
 -- призы (названия и картинки взяты из вашей рулетки; шансы можно менять)
 insert into public.prizes (id, name, rarity, weight, img) values
   (1, 'Летучка',     'common',    30, 'img/prizes/1.jpg'),
@@ -169,8 +170,9 @@ insert into public.prizes (id, name, rarity, weight, img) values
   (3, 'Контрольная', 'common',    25, 'img/prizes/3.jpg'),
   (4, 'Нам бы...',   'rare',      10, 'img/prizes/4.jpg'),
   (5, '7очка',       'epic',       7, 'img/prizes/5.jpg'),
-  (6, '9очка',       'legendary',  2, 'img/prizes/6.jpg'),
-  (7, 'ПаПа СтуЧАт', 'legendary',  1, 'img/prizes/7.jpg')
+  (6, '9очка',       'legendary',  1.99, 'img/prizes/6.jpg'),
+  (7, 'ПаПа СтуЧАт', 'legendary',  1, 'img/prizes/7.jpg'),
+  (8, 'Авакян. Матанализ. Победа.', 'legendary',  0.01, 'img/prizes/8.jpg')
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------
@@ -609,7 +611,7 @@ create unique index if not exists whack_games_one_active on public.whack_games (
 
 -- Кулдаун между играми «Еноты»
 create or replace function public._wh_cooldown() returns interval language sql immutable as
-$$ select interval '7 minutes' $$;
+$$ select interval '10 minutes' $$;
 
 -- когда игроку снова можно играть (null, если уже можно)
 create or replace function public._wh_next_at(p_account bigint) returns timestamptz
