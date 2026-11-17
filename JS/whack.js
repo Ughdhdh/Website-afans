@@ -69,7 +69,7 @@
   }
 
   // ----- правила демо (те же, что на сервере) -----
-  function demoMs(turn) { return Math.max(450, Math.round(900 * Math.pow(0.90, turn))); }
+  function demoMs(turn) { return Math.max(400, Math.round(800 * Math.pow(0.90, turn))); }
   function demoCells(turn) {
     var c = [0, 0, 0, 0, 0, 0, 0, 0, 0], a = 0, pos = [0, 1, 2, 3, 4, 5, 6, 7, 8], k;
     if (Math.random() < 0.5) a = Math.min(8, 1 + Math.floor(turn / 3));

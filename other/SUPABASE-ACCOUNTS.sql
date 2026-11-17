@@ -605,7 +605,7 @@ create unique index if not exists whack_games_one_active on public.whack_games (
 
 -- Кулдаун между играми «Еноты»
 create or replace function public._wh_cooldown() returns interval language sql immutable as
-$$ select interval '10 minutes' $$;
+$$ select interval '7 minutes' $$;
 
 -- когда игроку снова можно играть (null, если уже можно)
 create or replace function public._wh_next_at(p_account bigint) returns timestamptz
@@ -617,7 +617,7 @@ alter table public.whack_games enable row level security;
 revoke all on public.whack_games from public, anon, authenticated;
 
 create or replace function public._wh_ms(p_turn int) returns int language sql immutable as $$
-  select greatest(450, round(900 * power(0.90, p_turn)))::int $$;
+  select greatest(400, round(800 * power(0.90, p_turn)))::int $$;
 
 create or replace function public._wh_cells(p_turn int) returns int[]
 language plpgsql volatile as $$
