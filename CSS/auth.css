@@ -122,3 +122,7 @@
   .ava-chip { top: 4px; right: 4px; }
   .ava-chip .ava-acc, .ava-chip.ava-acc { font-size: 0.5rem; gap: 5px; }
 }
+
+/* премиум-аккаунт: золотое имя и свечение */
+.ava-name.prem { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.85); }
+.prem-star { font-style: normal; color: #fbbf24; }

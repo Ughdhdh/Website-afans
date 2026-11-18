@@ -47,3 +47,9 @@
 @media (max-width: 760px) {
   .adm-form { grid-template-columns: 1fr; }
 }
+
+/* премиум: золотая квадратная кнопка со звездой */
+.badge.prem { background: rgba(251, 191, 36, 0.2); color: var(--gold); margin-left: 6px; }
+.adm-btn.star { width: 34px; height: 34px; padding: 0; border-radius: 6px; font-size: 1.05rem; line-height: 1; color: #78350f; background: linear-gradient(135deg, #fde68a, #f59e0b); border: 1px solid #fbbf24; opacity: 0.55; }
+.adm-btn.star.on { opacity: 1; box-shadow: 0 0 12px rgba(251, 191, 36, 0.85); }
+.adm-btn.star:hover:not(:disabled) { opacity: 1; border-color: #fff; }

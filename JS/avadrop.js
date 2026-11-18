@@ -23,17 +23,18 @@
   var SPIN_MS = 10670;          // длительность анимации
   var GUEST_KEY = 'avakyanDrop.guest';
   var SOUND_KEY = 'avakyanDrop.sound';
+  var SKIP_KEY = 'avakyanDrop.skip';
 
-  var RARITY_RU = { common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
+  var RARITY_RU = { common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный', mythic: 'Мифический' };
 
   var $ = function (id) { return document.getElementById(id); };
   var panel = $('roulette'), win = $('dropWindow'), track = $('dropTrack'), result = $('dropResult');
   var btn = $('dropBtn'), paidBtn = $('dropPaid'), note = $('dropNote'), sub = $('dropSub');
-  var guestWarn = $('dropGuest'), legend = $('dropLegend'), sndBtn = $('dropSound');
+  var guestWarn = $('dropGuest'), legend = $('dropLegend'), sndBtn = $('dropSound'), skipBtn = $('dropSkip');
   var fx = $('dropFx'), video = $('dropVideo');
   var invGrid = $('invGrid'), invTotal = $('invTotal');
 
-  var cfg = { cooldown_ms: 4 * 3600 * 1000, paid_cost: 0.05 };   // уточняется с сервера (drop_config)
+  var cfg = { cooldown_ms: 2 * 3600 * 1000, premium_cooldown_ms: 3600 * 1000, paid_cost: 0.05 };   // уточняется с сервера (drop_config)
   var prizes = [];
   var spinning = false;
   var nextAt = 0;              // когда можно крутить бесплатно (время браузера, мс), 0 = можно
@@ -70,6 +71,23 @@
     renderSoundBtn();
   });
   renderSoundBtn();
+
+  // ===== скип анимации: прокрутки и её звука нет, сразу показывается выпавший предмет и играет его звук =====
+  var skipOn = false;
+  try { skipOn = localStorage.getItem(SKIP_KEY) === 'on'; } catch (e) {}
+  var finishNow = null;                 // завершить идущую прокрутку немедленно
+  function renderSkipBtn() {
+    skipBtn.textContent = 'Скип: ' + (skipOn ? 'вкл' : 'выкл');
+    skipBtn.classList.toggle('on', skipOn);
+    skipBtn.setAttribute('aria-pressed', skipOn ? 'true' : 'false');
+  }
+  skipBtn.addEventListener('click', function () {
+    skipOn = !skipOn;
+    try { localStorage.setItem(SKIP_KEY, skipOn ? 'on' : 'off'); } catch (e) {}
+    renderSkipBtn();
+    if (skipOn && finishNow) finishNow();          // включили во время прокрутки: сразу к результату
+  });
+  renderSkipBtn();
 
   function play(src) {
     if (!soundOn || !src) return null;
@@ -220,8 +238,9 @@
   function hideResult() { result.className = 'drop-result'; }
 
   // ===================== кулдаун и кнопки =====================
+  function myCooldown() { return Ava.user && Ava.user.premium ? cfg.premium_cooldown_ms : cfg.cooldown_ms; }
   function hoursText() {
-    var h = cfg.cooldown_ms / 3600000;
+    var h = myCooldown() / 3600000;
     return Number.isInteger(h) ? String(h) : h.toFixed(1);
   }
   function updatePaid() {
@@ -289,6 +308,13 @@
 
   // ===================== крутка =====================
   function animateTo(prize, done) {
+    if (skipOn) {                                   // без анимации и звука прокрутки
+      track.style.transition = 'none';
+      build(prize);
+      track.style.transform = 'translateX(' + (-centerOffset(WIN_INDEX, 0)) + 'px)';
+      setTimeout(done, 0);
+      return;
+    }
     track.style.transition = 'none';
     track.style.transform = 'translateX(0)';
     build(prize);
@@ -303,11 +329,17 @@
     startSpinSound();
     
     var fired = false;
+    finishNow = function () {
+      if (fired) return;
+      track.style.setProperty('transition', 'none', 'important');
+      track.style.transform = 'translateX(' + (-target) + 'px)';
+      finish();
+    };
     function finish(e) {
       // 3. Игнорируем завершение анимаций у дочерних карточек и картинок
       if (e && e.target !== track) return;
       if (fired) return;
-      fired = true;
+      fired = true; finishNow = null;
       track.removeEventListener('transitionend', finish);
       stopSpinSound();
       done();
@@ -340,14 +372,14 @@
       animateTo(res.prize, function () {
         showResult(res.prize, logged);
         setTimeout(function () { play(CONFIG.sounds.prize(res.prize)); }, CONFIG.sounds.prizeDelay);   // после анимации появления
-        if (res.prize.rarity === 'legendary') legendaryFx();
+        if (res.prize.rarity === 'legendary' || res.prize.rarity === 'mythic') legendaryFx();
         if (logged) {
           Ava.setBalance(res.balance);
           Ava.release();
           if (res.next_spin_at) nextAt = res.next_spin_at - (res.server_now - Date.now());
           loadInventory();
         } else {
-          var until = Date.now() + cfg.cooldown_ms;
+          var until = Date.now() + cfg.cooldown_ms;      // гость: обычный кулдаун
           try { localStorage.setItem(GUEST_KEY, JSON.stringify({ id: res.prize.id, until: until })); } catch (e) {}
           nextAt = until;
         }
@@ -364,7 +396,7 @@
   // ===================== легенда наград =====================
   function renderLegend() {
     legend.textContent = '';
-    ['common', 'rare', 'epic', 'legendary'].forEach(function (r) {
+    ['common', 'rare', 'epic', 'legendary', 'mythic'].forEach(function (r) {
       var p = prizes.filter(function (x) { return x.rarity === r; })[0];
       if (!p) return;
       var li = el('li', 'rar-' + r);
@@ -419,8 +451,12 @@
   paidBtn.addEventListener('click', function () { spin(true); });
 
   var lastUserId = undefined;
+  function updateSub() {
+    if (!cfg) return;
+    sub.textContent = 'Бесплатная крутка раз в ' + hoursText() + ' ч' + (Ava.user && Ava.user.premium ? ' (премиум)' : '') + '. Предметы падают в инвентарь, за каждый начисляются баллы.';
+  }
   Ava.onChange(function (u) {
-    updatePaid();                              // баланс мог измениться
+    updatePaid(); updateSub();                              // баланс мог измениться
     var id = u ? u.id : null;
     if (id === lastUserId) return;             // обновился только баланс: статус перезагружать не нужно
     lastUserId = id;
@@ -433,7 +469,7 @@
 
   Ava.rpc('drop_config').then(function (c) {
     cfg = c;
-    sub.textContent = 'Бесплатная крутка раз в ' + hoursText() + ' ч. Предметы падают в инвентарь, за каждый начисляются баллы.';
+    updateSub();
   }, function () {}).then(function () {
     return Ava.rpc('drop_prizes');
   }).then(function (list) {

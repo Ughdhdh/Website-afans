@@ -29,6 +29,7 @@
       var tr = el('tr');
       var n = el('td', '', a.name);
       if (a.is_admin) n.appendChild(el('span', 'badge admin', 'админ'));
+      if (a.premium) n.appendChild(el('span', 'badge prem', '\u2605 премиум'));
       tr.appendChild(n);
       tr.appendChild(el('td', '', a.login));
       var st = el('td'); st.appendChild(el('span', 'badge ' + a.status, STATUS_RU[a.status] || a.status)); tr.appendChild(st);
@@ -40,6 +41,9 @@
       if (a.status !== 'blocked' && !(Ava.user && a.id === Ava.user.id)) act.appendChild(button('Заблокировать', 'bad', function () { setStatus(a, 'blocked'); }));
       act.appendChild(button('Пароль', '', function () { resetPass(a); }));
       act.appendChild(button('Баланс', '', function () { adjust(a); }));
+      var sb = button('\u2605', 'star' + (a.premium ? ' on' : ''), function () { setPremium(a); });
+      sb.title = 'Премиум: ' + (a.premium ? 'TRUE' : 'FALSE') + ' (нажмите, чтобы изменить)'; sb.setAttribute('aria-label', sb.title);
+      act.appendChild(sb);
       act.appendChild(button('Заметка', '', function () { editNote(a); }));
       tr.appendChild(act);
       rows.appendChild(tr);
@@ -71,6 +75,15 @@
     if (v === null) return;
     Ava.call('admin_set_note', { p_id: a.id, p_note: v }).then(function () { msg(listMsg, 'Заметка сохранена.', true); return load(); },
       function (e) { msg(listMsg, Ava.errText(e)); });
+  }
+  function setPremium(a) {
+    var v = prompt('Премиум для ' + a.name + ': напишите TRUE (выдать) или FALSE (забрать).\nСейчас: ' + (a.premium ? 'TRUE' : 'FALSE'), a.premium ? 'TRUE' : 'FALSE');
+    if (v === null) return;
+    v = String(v).trim().toUpperCase();
+    if (v !== 'TRUE' && v !== 'FALSE') { msg(listMsg, 'Нужно написать TRUE или FALSE.'); return; }
+    Ava.call('admin_set_premium', { p_id: a.id, p_premium: v === 'TRUE' }).then(function () {
+      msg(listMsg, 'Премиум для ' + a.name + ': ' + v + '.', true); return load();
+    }, function (e) { msg(listMsg, Ava.errText(e)); });
   }
   function adjust(a) {
     var v = prompt('Изменить баланс ' + a.name + ' на сколько? (например 0.5 или -0.2)\nСейчас: ' + Ava.fmt(a.balance));

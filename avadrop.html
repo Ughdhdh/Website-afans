@@ -48,7 +48,10 @@
                 <button type="button" class="spin-btn" id="dropBtn" disabled>Крутить бесплатно</button>
                 <button type="button" class="paid-btn" id="dropPaid" disabled>Ещё раз за 0.05&nbsp;б.</button>
                 <span class="drop-note" id="dropNote">Загрузка…</span>
-                <button type="button" class="snd-btn" id="dropSound" aria-pressed="true">Звук: вкл</button>
+                <span class="drop-tools">
+                    <button type="button" class="snd-btn" id="dropSkip" aria-pressed="false" title="Пропускать анимацию прокрутки: сразу показывать выпавший предмет">Скип: выкл</button>
+                    <button type="button" class="snd-btn" id="dropSound" aria-pressed="true">Звук: вкл</button>
+                </span>
             </div>
 
             <p class="guest-warn" id="dropGuest" hidden>
@@ -129,7 +132,7 @@
                             <b class="ref-code" id="refCode">-----</b>
                             <button type="button" class="ref-btn ghost" id="refCopy">Копировать</button>
                         </div>
-                        <span class="ref-hint">Друг вводит его у себя, а вы получаете 7% от его прибыли.</span>
+                        <span class="ref-hint">Друг вводит его у себя, а вы получаете <b id="refRate">7%</b> от его прибыли.</span>
                     </div>
                     <div class="ref-enter">
                         <span class="ref-label">Код пригласившего</span>

@@ -56,11 +56,14 @@ create index if not exists login_attempts_idx on public.login_attempts (login_lc
 create table if not exists public.prizes (
   id     int primary key,
   name   text not null,
-  rarity text not null check (rarity in ('common','rare','epic','legendary')),
+  rarity text not null,
   weight numeric(10,2) not null check (weight > 0),   -- относительный шанс выпадения (можно дробный: 0.01)
   img    text,                               -- путь к картинке на сайте
   active boolean not null default true
 );
+
+alter table public.prizes drop constraint if exists prizes_rarity_check;
+alter table public.prizes add constraint prizes_rarity_check check (rarity in ('common','rare','epic','legendary','mythic'));
 
 create table if not exists public.inventory (
   id         bigint generated always as identity primary key,
@@ -99,6 +102,9 @@ create unique index if not exists rocket_games_one_active on public.rocket_games
 -- комментарии форума: помечаем, написал ли их участник с аккаунтом
 alter table public.comments add column if not exists account_id bigint references public.accounts(id) on delete set null;
 alter table public.comments add column if not exists verified boolean not null default false;
+-- ПРЕМИУМ: выдаёт только админ (кнопка ★ в админке)
+alter table public.accounts add column if not exists is_premium boolean not null default false;
+alter table public.comments add column if not exists premium boolean not null default false;   -- золотая плашка в сообщении
 
 -- ---------------------------------------------------------------------
 --  ПРАВА: прямого доступа к новым таблицам нет ни у кого, кроме функций
@@ -120,7 +126,7 @@ revoke all on public.accounts, public.sessions, public.login_attempts, public.pr
 drop policy if exists "anon добавляет комментарии" on public.comments;
 create policy "anon добавляет комментарии"
   on public.comments for insert to anon
-  with check (approved = true and verified = false and account_id is null);
+  with check (approved = true and verified = false and account_id is null and premium = false);
 
 -- гость не может назваться ником зарегистрированного участника
 create or replace function public._comments_guard() returns trigger
@@ -146,6 +152,18 @@ create trigger comments_guard before insert on public.comments
 create or replace function public._drop_cooldown() returns interval language sql immutable as
 $$ select interval '2 hours' $$;
 
+-- Кулдаун бесплатной крутки у ПРЕМИУМ-аккаунта
+create or replace function public._premium_drop_cooldown() returns interval language sql immutable as
+$$ select interval '1 hour' $$;
+
+-- кулдаун крутки для конкретного игрока
+create or replace function public._drop_cd(p_premium boolean) returns interval language sql immutable as
+$$ select case when p_premium then public._premium_drop_cooldown() else public._drop_cooldown() end $$;
+
+-- Доля прибыли реферала, которую получает реферер (обычный / премиум)
+create or replace function public._ref_rate(p_premium boolean) returns numeric language sql immutable as
+$$ select case when p_premium then 0.10 else 0.07 end::numeric $$;
+
 -- Цена дополнительной (платной) крутки в баллах
 create or replace function public._paid_spin_cost() returns numeric language sql immutable as
 $$ select 0.05::numeric $$;
@@ -153,7 +171,7 @@ $$ select 0.05::numeric $$;
 -- Сколько баллов даёт предмет в зависимости от редкости
 create or replace function public._reward(p_rarity text) returns numeric language sql immutable as
 $$ select case p_rarity when 'common' then 0.01 when 'rare' then 0.03
-                        when 'epic' then 0.06 when 'legendary' then 0.12 else 0 end::numeric $$;
+                        when 'epic' then 0.06 when 'legendary' then 0.12 when 'mythic' then 1.00 else 0 end::numeric $$;
 
 -- Ракета: множитель = exp(рост * секунды). 0.12 => x2 через ~5.8 c, x10 через ~19 c
 -- максимальная ставка в ракете (защита от numeric overflow при огромных выплатах)
@@ -172,8 +190,9 @@ insert into public.prizes (id, name, rarity, weight, img) values
   (5, '7очка',       'epic',       7, 'img/prizes/5.jpg'),
   (6, '9очка',       'legendary',  1.99, 'img/prizes/6.jpg'),
   (7, 'ПаПа СтуЧАт', 'legendary',  1, 'img/prizes/7.jpg'),
-  (8, 'Авакян. Матанализ. Победа.', 'legendary',  0.01, 'img/prizes/8.jpg')
+  (8, 'А. М. П.', 'mythic',     0.01, 'img/prizes/8.jpg')
 on conflict (id) do nothing;
+update public.prizes set rarity = 'mythic' where id = 8;      -- А. М. П. теперь мифический (+1.00 б.)
 
 -- ---------------------------------------------------------------------
 --  ВНУТРЕННИЕ ФУНКЦИИ (из браузера недоступны)
@@ -183,7 +202,7 @@ $$ select (extract(epoch from t) * 1000)::bigint $$;
 
 create or replace function public._user_json(a public.accounts) returns json language sql as
 $$ select json_build_object('id', a.id, 'login', a.login, 'name', a.display_name,
-                            'balance', a.balance, 'is_admin', a.is_admin) $$;
+                            'balance', a.balance, 'is_admin', a.is_admin, 'premium', a.is_premium) $$;
 
 -- участник по токену сессии; ошибки: AUTH_REQUIRED, NOT_APPROVED
 create or replace function public._acc(p_token text) returns public.accounts
@@ -298,7 +317,7 @@ begin
   if a.id is null then
     return json_build_object('logged', false, 'server_now', public._ms(now()));
   end if;
-  nxt := a.last_spin_at + public._drop_cooldown();
+  nxt := a.last_spin_at + public._drop_cd(a.is_premium);
   return json_build_object('logged', true, 'server_now', public._ms(now()),
     'next_spin_at', case when nxt > now() then public._ms(nxt) end,
     'last_prize', (select json_build_object('id', pr.id, 'name', pr.name, 'rarity', pr.rarity, 'img', pr.img,
@@ -311,6 +330,7 @@ end $$;
 create or replace function public.drop_config() returns json
 language sql security definer set search_path = public, extensions as $$
   select json_build_object('cooldown_ms', (extract(epoch from public._drop_cooldown()) * 1000)::bigint,
+                           'premium_cooldown_ms', (extract(epoch from public._premium_drop_cooldown()) * 1000)::bigint,
                            'paid_cost', public._paid_spin_cost())
 $$;
 
@@ -326,22 +346,22 @@ begin
   if p_paid then
     cost := public._paid_spin_cost();
     if a.balance < cost then raise exception 'NO_FUNDS'; end if;
-    nxt := a.last_spin_at + public._drop_cooldown();                    -- платная крутка кулдаун не трогает
+    nxt := a.last_spin_at + public._drop_cd(a.is_premium);              -- платная крутка кулдаун не трогает
   else
-    nxt := a.last_spin_at + public._drop_cooldown();
+    nxt := a.last_spin_at + public._drop_cd(a.is_premium);
     if nxt > now() then
       return json_build_object('ok', false, 'error', 'COOLDOWN', 'next_spin_at', public._ms(nxt),
                                'server_now', public._ms(now()));
     end if;
     update public.accounts set last_spin_at = now() where id = a.id;
-    nxt := now() + public._drop_cooldown();
+    nxt := now() + public._drop_cd(a.is_premium);
   end if;
   p := public._pick_prize();
   rew := public._reward(p.rarity);
   insert into public.inventory (account_id, prize_id) values (a.id, p.id);
   if p_paid then perform public._credit(a.id, -cost, 'drop:paid'); end if;
   perform public._credit(a.id, rew, 'drop:' || p.id);
-  perform public._ref_bonus(a.id, rew - cost);                          -- 7% рефереру с прибыли
+  perform public._ref_bonus(a.id, rew - cost);                          -- 7% (премиум 10%) рефереру с прибыли
   return json_build_object('ok', true, 'paid', p_paid,
     'prize', json_build_object('id', p.id, 'name', p.name, 'rarity', p.rarity, 'img', p.img, 'reward', rew),
     'balance', a.balance - cost + rew,
@@ -508,8 +528,8 @@ begin
   if exists (select 1 from public.comments where account_id = a.id and created_at > now() - interval '10 seconds') then
     raise exception 'TOO_FAST';
   end if;
-  insert into public.comments (nick, message, approved, account_id, verified)
-  values (a.display_name, msg, true, a.id, true);
+  insert into public.comments (nick, message, approved, account_id, verified, premium)
+  values (a.display_name, msg, true, a.id, true, a.is_premium);
   return json_build_object('ok', true);
 end $$;
 
@@ -522,7 +542,7 @@ begin
   perform public._admin(p_token);
   return (select coalesce(json_agg(json_build_object(
             'id', ac.id, 'login', ac.login, 'name', ac.display_name, 'status', ac.status,
-            'is_admin', ac.is_admin, 'balance', ac.balance, 'note', ac.note, 'created_at', public._ms(ac.created_at),
+            'is_admin', ac.is_admin, 'premium', ac.is_premium, 'balance', ac.balance, 'note', ac.note, 'created_at', public._ms(ac.created_at),
             'items', (select count(*) from public.inventory i where i.account_id = ac.id)
           ) order by (ac.status = 'pending') desc, ac.id desc), '[]'::json)
             from public.accounts ac);
@@ -574,6 +594,18 @@ begin
   return json_build_object('ok', true);
 end $$;
 
+-- выдать / забрать премиум (только админ); заодно обновляем плашку в уже написанных сообщениях
+create or replace function public.admin_set_premium(p_token text, p_id bigint, p_premium boolean) returns json
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform public._admin(p_token);
+  if p_premium is null then raise exception 'BAD_STATUS'; end if;
+  update public.accounts set is_premium = p_premium where id = p_id;
+  if not found then raise exception 'NO_ACCOUNT'; end if;
+  update public.comments set premium = p_premium where account_id = p_id;
+  return json_build_object('ok', true, 'premium', p_premium);
+end $$;
+
 create or replace function public.admin_adjust_balance(p_token text, p_id bigint, p_delta numeric, p_reason text default 'admin') returns json
 language plpgsql security definer set search_path = public, extensions as $$
 declare a public.accounts; d numeric := round(coalesce(p_delta, 0), 2);
@@ -613,11 +645,17 @@ create unique index if not exists whack_games_one_active on public.whack_games (
 create or replace function public._wh_cooldown() returns interval language sql immutable as
 $$ select interval '10 minutes' $$;
 
+-- Кулдаун «Енотов» у ПРЕМИУМ-аккаунта
+create or replace function public._premium_wh_cooldown() returns interval language sql immutable as
+$$ select interval '5 minutes' $$;
+
 -- когда игроку снова можно играть (null, если уже можно)
 create or replace function public._wh_next_at(p_account bigint) returns timestamptz
 language sql stable security definer set search_path = public, extensions as $$
   select case when t > now() then t end
-  from (select max(coalesce(ended_at, round_at)) + public._wh_cooldown() as t
+  from (select max(coalesce(ended_at, round_at))
+               + case when (select is_premium from public.accounts where id = p_account)
+                      then public._premium_wh_cooldown() else public._wh_cooldown() end as t
           from public.whack_games where account_id = p_account and status <> 'active') x $$;
 alter table public.whack_games enable row level security;
 revoke all on public.whack_games from public, anon, authenticated;
@@ -742,7 +780,7 @@ end $$;
 
 -- ---------------------------------------------------------------------
 --  РЕФЕРАЛЫ: у каждого аккаунта свой код из 5 цифр; ввести можно один код, один раз, менять нельзя.
---  Реферер получает 7% от прибыли реферала (выигрыш рулетки, чистый выигрыш ракеты, итог «Енотов»).
+--  Реферер получает 7% (если он премиум, то 10%) от прибыли реферала (выигрыш рулетки, чистый выигрыш ракеты, итог «Енотов»).
 --  Бонус платит система, у реферала ничего не вычитается. Убытки реферала бонус не уменьшают.
 -- ---------------------------------------------------------------------
 alter table public.accounts add column if not exists ref_code text;
@@ -785,15 +823,16 @@ create index if not exists referrals_referrer on public.referrals (referrer_id);
 alter table public.referrals enable row level security;
 revoke all on public.referrals from public, anon, authenticated;
 
--- начислить рефереру 7% с прибыли (p_profit <= 0 ничего не делает)
+-- начислить рефереру 7% (премиум 10%) с прибыли (p_profit <= 0 ничего не делает)
 create or replace function public._ref_bonus(p_account bigint, p_profit numeric) returns void
 language plpgsql security definer set search_path = public, extensions as $$
-declare r public.referrals; due numeric;
+declare r public.referrals; due numeric; prem boolean;
 begin
   if p_profit is null or p_profit <= 0 then return; end if;
   select * into r from public.referrals where invitee_id = p_account for update;
   if not found then return; end if;
-  r.earned := r.earned + p_profit * 0.07;
+  select is_premium into prem from public.accounts where id = r.referrer_id;     -- у премиум-реферера 10%
+  r.earned := r.earned + p_profit * public._ref_rate(coalesce(prem, false));
   due := floor((r.earned - r.paid) * 100) / 100;          -- в баланс идут целые сотые, остаток копится
   update public.referrals set earned = r.earned, paid = paid + greatest(due, 0) where invitee_id = p_account;
   if due > 0 then perform public._credit(r.referrer_id, due, 'ref:' || p_account); end if;
@@ -805,11 +844,11 @@ declare a public.accounts; ref text; lst json; tot numeric;
 begin
   a := public._acc(p_token);
   select a2.login into ref from public.referrals r join public.accounts a2 on a2.id = r.referrer_id where r.invitee_id = a.id;
-  select coalesce(json_agg(json_build_object('login', x.login, 'earned', round(r.earned, 2), 'since', public._ms(r.created_at))
+  select coalesce(json_agg(json_build_object('login', x.login, 'earned', round(r.earned, 2), 'since', public._ms(r.created_at), 'premium', x.is_premium)
                            order by r.earned desc, r.created_at), '[]'::json), coalesce(sum(r.earned), 0)
     into lst, tot
     from public.referrals r join public.accounts x on x.id = r.invitee_id where r.referrer_id = a.id;
-  return json_build_object('code', a.ref_code, 'referrer', ref, 'rate', 0.07, 'total', round(tot, 2), 'list', lst);
+  return json_build_object('code', a.ref_code, 'referrer', ref, 'rate', public._ref_rate(a.is_premium), 'total', round(tot, 2), 'list', lst);
 end $$;
 
 create or replace function public.ref_set(p_token text, p_code text) returns json
@@ -836,7 +875,7 @@ revoke all on function
   public._norm(text), public._ms(timestamptz), public._user_json(public.accounts), public._acc(text), public._admin(text),
   public._credit(bigint, numeric, text), public._pick_prize(), public._rg_settle(bigint), public._rg_json(public.rocket_games),
   public._comments_guard(), public._drop_cooldown(), public._reward(text),
-  public._paid_spin_cost(), public._rk_growth(), public._rk_mult(numeric),
+  public._paid_spin_cost(), public._premium_drop_cooldown(), public._drop_cd(boolean), public._ref_rate(boolean), public._premium_wh_cooldown(), public._rk_growth(), public._rk_mult(numeric),
   public._wh_cooldown(), public._wh_next_at(bigint), public._wh_ms(int), public._wh_cells(int), public._wh_settle(bigint), public._wh_json(public.whack_games),
   public._ref_gen(), public._ref_assign(), public._ref_bonus(bigint, numeric)
   from public, anon, authenticated;
@@ -850,7 +889,7 @@ revoke all on function
   public.forum_post(text, text),
   public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
-  public.admin_adjust_balance(text, bigint, numeric, text)
+  public.admin_adjust_balance(text, bigint, numeric, text), public.admin_set_premium(text, bigint, boolean)
   from public;
 
 grant execute on function
@@ -862,7 +901,7 @@ grant execute on function
   public.forum_post(text, text),
   public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
-  public.admin_adjust_balance(text, bigint, numeric, text)
+  public.admin_adjust_balance(text, bigint, numeric, text), public.admin_set_premium(text, bigint, boolean)
   to anon, authenticated;
 
 notify pgrst, 'reload schema';

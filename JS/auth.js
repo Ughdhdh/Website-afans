@@ -274,7 +274,8 @@ Ava.mount = function (el, opts) {
     var showInfo = opts.showInfo !== undefined ? opts.showInfo : window.location.pathname.endsWith('avadrop.html');
     if (showInfo) {
       var name = document.createElement('span');
-      name.className = 'ava-name'; name.textContent = u.name;
+      name.className = 'ava-name' + (u.premium ? ' prem' : ''); name.textContent = u.name;
+      if (u.premium) { var st = document.createElement('i'); st.className = 'prem-star'; st.textContent = '\u2605'; st.title = 'Премиум'; name.appendChild(document.createTextNode(' ')); name.appendChild(st); }
       var bal = document.createElement('span');
       bal.className = 'ava-bal'; bal.textContent = Ava.fmt(u.balance) + '\u00a0б.';
       bal.title = 'Баланс в баллах (б.)';

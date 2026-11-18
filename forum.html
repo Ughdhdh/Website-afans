@@ -82,11 +82,12 @@
                 if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
                 items.forEach(function (c) {
                     var card = document.createElement('div');
-                    card.className = 'comment';
+                    card.className = 'comment' + (c.premium ? ' premium' : '');
                     var head = document.createElement('div');
                     head.className = 'comment-head';
                     var left = document.createElement('div');
                     var nickEl = document.createElement('b');
+                    if (c.premium) nickEl.className = 'prem';
                     nickEl.textContent = c.nick;
                     left.appendChild(nickEl);
 
@@ -95,6 +96,14 @@
                         tag.className = 'tag member';
                         tag.textContent = '✔';
                         left.appendChild(tag);
+                    }
+
+                    if (c.premium) {
+                        var pt = document.createElement('em');
+                        pt.className = 'tag premium';
+                        pt.textContent = '\u2605';
+                        pt.title = 'Премиум-участник';
+                        left.appendChild(pt);
                     }
 
                     var dateEl = document.createElement('span');
@@ -114,7 +123,7 @@
 
                 function load() {
                     if (!configured) { list.textContent = 'Форум ещё не настроен.'; return Promise.resolve(); }
-                    return fetch(API + '?select=nick,message,created_at,verified&order=created_at.desc&limit=100', { headers: HEADERS })
+                    return fetch(API + '?select=nick,message,created_at,verified,premium&order=created_at.desc&limit=100', { headers: HEADERS })
                         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
                         .then(render)
                         .catch(function () { list.textContent = 'Не удалось загрузить комментарии.'; });

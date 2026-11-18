@@ -1,5 +1,5 @@
 /* AvakyanDrop: рефералы. Свой код из 5 цифр, ввод кода пригласившего (один раз, навсегда) и список рефералов с прибылью.
-   Реферер получает 7% от прибыли реферала (считает сервер: ref_info / ref_set). */
+   Реферер получает 7% (премиум-реферер 10%) от прибыли реферала (считает сервер: ref_info / ref_set). */
 (function () {
   'use strict';
   if (!document.getElementById('refList') || !window.Ava) return;
@@ -17,6 +17,7 @@
   function render(d) {
     code = d.code || '';
     codeEl.textContent = code || '-----';
+    var rateEl = $('refRate'); if (rateEl) rateEl.textContent = Math.round((d.rate || 0.07) * 100) + '%' + (Ava.user && Ava.user.premium ? ' (премиум)' : '');
     totalEl.textContent = d.list.length ? ('Заработано: ' + fmt(d.total) + UNIT) : '';
     if (d.referrer) {                        // реферера менять нельзя
       form.hidden = true;
@@ -28,7 +29,7 @@
     if (!d.list.length) { listEl.innerHTML = '<p class="ref-empty">Пока никого. Отправьте друзьям свой код.</p>'; return; }
     listEl.innerHTML = '<div class="ref-row head"><span>Игрок</span><span>Ваша прибыль</span></div>' +
       d.list.map(function (r) {
-        return '<div class="ref-row"><span class="ref-name">' + esc(r.login) + '</span><span class="ref-earn">+' + fmt(r.earned) + UNIT + '</span></div>';
+        return '<div class="ref-row"><span class="ref-name' + (r.premium ? ' prem' : '') + '">' + esc(r.login) + (r.premium ? ' <i class="prem-star">\u2605</i>' : '') + '</span><span class="ref-earn">+' + fmt(r.earned) + UNIT + '</span></div>';
       }).join('');
   }
 
