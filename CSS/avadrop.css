@@ -78,7 +78,7 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
   box-shadow: 0 14px 44px rgba(91, 33, 182, 0.4);
 }
 .drop-face {
-  position: absolute; left: 0; top: 0;
+  position: absolute; left: 1%; top: 1%;
   height: 180px; width: auto;
   pointer-events: none; user-select: none; z-index: 1;
   filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.55));
@@ -149,9 +149,8 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 }
 .paid-btn:hover:not(:disabled) { transform: translateY(-2px); background: rgba(124, 58, 237, 0.7); }
 .paid-btn:disabled { cursor: not-allowed; opacity: 0.5; }
-.snd-btn { margin-left: auto; padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(233, 213, 255, 0.4); background: rgba(0, 0, 0, 0.25); color: #e9d5ff; font-size: 0.8rem; cursor: pointer; }
+.snd-btn { margin-left: auto; padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(233, 213, 255, 0.4); background: rgba(0, 0, 0, 0.25); color: #e9d5ff; font-size: 1rem; cursor: pointer; }
 .snd-btn:hover { background: rgba(0, 0, 0, 0.45); }
-.snd-btn.off { opacity: 0.6; text-decoration: line-through; }
 .drop-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 7; pointer-events: none; }
 .drop-fxvideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 6; pointer-events: none; background: transparent; }
 .drop-fxvideo[hidden] { display: none; }
@@ -200,7 +199,7 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 .bet-main { display: grid; grid-template-columns: 1fr 1.1fr; gap: 10px; align-items: stretch; }
 .amount-box { display: grid; gap: 6px; }
 .amount { display: flex; align-items: center; border-radius: 10px; background: #0f0722; border: 1px solid var(--line); overflow: hidden; }
-.amount button { width: 38px; height: 38px; border: none; background: transparent; color: var(--txt); font-size: 1.2rem; cursor: pointer; }
+.amount button { width: 38px; height: 51px; border: none; background: transparent; color: var(--txt); font-size: 1.2rem; cursor: pointer; }
 .amount button:hover:not(:disabled) { background: rgba(168, 85, 247, 0.2); }
 .amount input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--txt); font: 700 1.05rem var(--font); text-align: center; outline: none; font-variant-numeric: tabular-nums; }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
@@ -233,9 +232,9 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 .inv-card { position: relative; padding: 10px; border-radius: 12px; text-align: center; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); border-bottom: 4px solid var(--rc); font-size: 0.82rem; font-weight: 700; }
 .inv-card .pic { width: 100%; aspect-ratio: 1; margin-bottom: 8px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid var(--rc); background: rgba(0, 0, 0, 0.3); display: grid; place-items: center; font-size: 2rem; color: var(--rc); }
 .inv-card .inv-play { position: absolute; bottom: 6px; right: 6px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
-  font-size: 0.75rem; line-height: 1; color: #fff; background: rgba(15, 7, 34, 0.78); box-shadow: 0 0 0 2px var(--rc); }
+  font-size: 1rem; line-height: 1; padding-left: 2%; color: #fff; background: rgba(15, 7, 34, 0.78); box-shadow: 0 0 0 2px var(--rc); }
 .inv-card .inv-play:hover { background: var(--rc); color: #1a0f33; }
-.inv-card .inv-play.on { background: var(--rc); color: #1a0f33; }
+.inv-card .inv-play.on { background: var(--rc); color: #1a0f33; padding-left: 0;}
 .inv-card.none { opacity: 0.4; }
 .inv-card.none .pic img { filter: grayscale(1) brightness(0.5); }
 .inv-card .cnt { z-index: 2; position: absolute; top: 6px; right: 6px; min-width: 26px; padding: 2px 7px; border-radius: 99px; background: var(--rc); color: #1a0f33; font-size: 0.78rem; font-weight: 800; }

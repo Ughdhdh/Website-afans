@@ -60,7 +60,7 @@
   var spinAudio = null;
 
   function renderSoundBtn() {
-    sndBtn.textContent = 'Звук: ' + (soundOn ? 'вкл' : 'выкл');
+    sndBtn.textContent = (soundOn ? '🔊' : '🔇');
     sndBtn.classList.toggle('off', !soundOn);
     sndBtn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
   }
@@ -77,7 +77,7 @@
   try { skipOn = localStorage.getItem(SKIP_KEY) === 'on'; } catch (e) {}
   var finishNow = null;                 // завершить идущую прокрутку немедленно
   function renderSkipBtn() {
-    skipBtn.textContent = 'Скип: ' + (skipOn ? 'вкл' : 'выкл');
+    skipBtn.textContent = '⏭︎';
     skipBtn.classList.toggle('on', skipOn);
     skipBtn.setAttribute('aria-pressed', skipOn ? 'true' : 'false');
   }
