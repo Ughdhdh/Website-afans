@@ -261,6 +261,7 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
   .rk-sub { left: 8%; top: calc(24% + 3rem); font-size: 0.8rem; }
   .rk-bets { grid-template-columns: minmax(0, 1fr); }
   .snd-btn { margin-left: 0; }
+  .spin-btn { padding: 10px 14px; font-size: 0.85rem; }
   .paid-btn { padding: 10px 14px; font-size: 0.85rem; }
 }
 

@@ -29,7 +29,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var panel = $('roulette'), win = $('dropWindow'), track = $('dropTrack'), result = $('dropResult');
-  var btn = $('dropBtn'), paidBtn = $('dropPaid'), note = $('dropNote'), sub = $('dropSub');
+  var btn = $('dropBtn'), paidBtn = $('dropPaid'), sub = $('dropSub');
   var guestWarn = $('dropGuest'), legend = $('dropLegend'), sndBtn = $('dropSound'), skipBtn = $('dropSkip');
   var fx = $('dropFx'), video = $('dropVideo');
   var invGrid = $('invGrid'), invTotal = $('invTotal');
@@ -260,7 +260,7 @@
     var left = nextAt - Date.now();
     if (left <= 0) { unlock(); return; }
     var h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
-    note.textContent = 'Бесплатно через ' + pad(h) + ':' + pad(m) + ':' + pad(s);
+    btn.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
   }
   function lock(untilMs) {
     nextAt = untilMs;
@@ -272,7 +272,7 @@
   function unlock() {
     clearInterval(timer);
     nextAt = 0;
-    if (!spinning) { hideResult(); btn.disabled = false; note.textContent = 'Бесплатная крутка готова!'; }
+    if (!spinning) { hideResult(); btn.disabled = false; btn.textContent = 'Крутить бесплатно'; }
   }
   function afterSpin() {            // вернуть кнопки в правильное состояние
     spinning = false;
@@ -295,7 +295,7 @@
           if (s.last_prize) showResult(s.last_prize, true);
           lock(s.next_spin_at - off);
         } else unlock();
-      }, function (e) { note.textContent = Ava.errText(e); });
+      }, function (e) { btn.textContent = Ava.errText(e); });
     } else {
       var g = guestLast();
       if (g && g.until > Date.now()) {
@@ -356,7 +356,7 @@
     spinning = true;
     btn.disabled = true;
     paidBtn.disabled = true;
-    note.textContent = 'Крутим…';
+    (paid ? paidBtn : btn).textContent = 'Крутим…';
     hideResult();
     var logged = !!Ava.user;
     if (logged) Ava.hold = true;       // баланс в шапке обновится после остановки ленты
@@ -389,7 +389,7 @@
     }, function (e) {
       Ava.release();
       afterSpin();
-      note.textContent = Ava.errText(e);
+      (paid ? paidBtn : btn).textContent = Ava.errText(e);
     });
   }
 
@@ -479,6 +479,6 @@
     updatePaid();
     refreshStatus();
   }, function (e) {
-    note.textContent = Ava.errText(e);
+    btn.textContent = Ava.errText(e);
   });
 })();

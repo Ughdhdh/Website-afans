@@ -82,7 +82,7 @@
                 if (!items.length) { list.textContent = 'Пока нет комментариев. Будьте первым!'; return; }
                 items.forEach(function (c) {
                     var card = document.createElement('div');
-                    card.className = 'comment' + (c.premium ? ' premium' : '');
+                    card.className = 'comment';
                     var head = document.createElement('div');
                     head.className = 'comment-head';
                     var left = document.createElement('div');
