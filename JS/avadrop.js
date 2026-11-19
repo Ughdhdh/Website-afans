@@ -29,7 +29,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var panel = $('roulette'), win = $('dropWindow'), track = $('dropTrack'), result = $('dropResult');
-  var btn = $('dropBtn'), paidBtn = $('dropPaid'), sub = $('dropSub');
+  var btn = $('dropBtn'), sub = $('dropSub'), timerEl = null;
   var guestWarn = $('dropGuest'), legend = $('dropLegend'), sndBtn = $('dropSound'), skipBtn = $('dropSkip');
   var fx = $('dropFx'), video = $('dropVideo');
   var invGrid = $('invGrid'), invTotal = $('invTotal');
@@ -206,11 +206,26 @@
   }
 
   // ===================== лента =====================
+  // Пока предмет ни разу не выпал, в ленте он приглушён, а вместо названия «???» (как в инвентаре)
+  var owned = {};                                   // id предметов, которые уже есть в инвентаре
   function itemNode(p) {
-    var d = el('div', 'drop-item rar-' + p.rarity);
+    var has = !!owned[p.id];
+    var d = el('div', 'drop-item rar-' + p.rarity + (has ? '' : ' locked'));
+    d.setAttribute('data-id', p.id);
     d.appendChild(pic(p));
-    d.appendChild(el('span', '', p.name));
+    d.appendChild(el('span', '', has ? p.name : '???'));
     return d;
+  }
+  function markOwned() {                            // обновить уже нарисованную ленту
+    var kids = track.children;
+    for (var i = 0; i < kids.length; i++) {
+      var id = kids[i].getAttribute('data-id'), has = !!owned[id];
+      kids[i].classList.toggle('locked', !has);
+      var nm = kids[i].lastChild;
+      if (!nm) continue;
+      var p = prizes.filter(function (x) { return String(x.id) === id; })[0];
+      nm.textContent = has && p ? p.name : '???';
+    }
   }
   function randomPrize() { return prizes[Math.floor(Math.random() * prizes.length)]; }
 
@@ -243,42 +258,53 @@
     var h = myCooldown() / 3600000;
     return Number.isInteger(h) ? String(h) : h.toFixed(1);
   }
-  function updatePaid() {
-    paidBtn.textContent = 'Ещё раз за ' + Ava.fmt(cfg.paid_cost) + '\u00a0б.';
-    if (!Ava.user) {
-      paidBtn.disabled = spinning || !prizes.length;
-      paidBtn.title = 'Войдите в аккаунт, чтобы крутить за баллы';
-      return;
+  // Одна кнопка на два режима:
+  //  - бесплатная доступна: золотая «Крутить бесплатно»;
+  //  - бесплатная на перезарядке: «Ещё за 0.05 б.» с таймером под надписью (крутка за баллы).
+  function render() {
+    if (spinning || !prizes.length) return;
+    if (nextAt > Date.now()) {
+      btn.className = 'paid-btn';
+      btn.textContent = '';
+      var l1 = document.createElement('span'); l1.textContent = 'Ещё за ' + Ava.fmt(cfg.paid_cost) + '\u00a0б.';
+      timerEl = document.createElement('span'); timerEl.className = 'timer';
+      btn.appendChild(l1); btn.appendChild(timerEl);
+      tick();
+      if (!Ava.user) { btn.disabled = false; btn.title = 'Войдите в аккаунт, чтобы крутить за баллы'; return; }
+      var enough = Number(Ava.user.balance) + 1e-9 >= cfg.paid_cost;
+      btn.disabled = !enough;
+      btn.title = enough ? 'Дополнительная крутка за баллы (бесплатная не тратится)' : 'Не хватает баллов';
+    } else {
+      timerEl = null;
+      btn.className = 'spin-btn';
+      btn.textContent = 'Крутить бесплатно';
+      btn.disabled = false; btn.title = '';
     }
-    var enough = Number(Ava.user.balance) + 1e-9 >= cfg.paid_cost;
-    paidBtn.disabled = spinning || !prizes.length || !enough;
-    paidBtn.title = enough ? 'Дополнительная крутка за баллы (бесплатная не тратится)' : 'Не хватает баллов';
   }
+  function updatePaid() { render(); }
 
   function tick() {
     if (spinning) return;
     var left = nextAt - Date.now();
     if (left <= 0) { unlock(); return; }
     var h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
-    btn.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+    if (timerEl) timerEl.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
   }
   function lock(untilMs) {
     nextAt = untilMs;
-    btn.disabled = true;
     clearInterval(timer);
-    tick();
+    render();
     timer = setInterval(tick, 1000);
   }
   function unlock() {
     clearInterval(timer);
     nextAt = 0;
-    if (!spinning) { hideResult(); btn.disabled = false; btn.textContent = 'Крутить бесплатно'; }
+    if (!spinning) { hideResult(); render(); }
   }
   function afterSpin() {            // вернуть кнопки в правильное состояние
     spinning = false;
-    if (nextAt > Date.now()) { btn.disabled = true; tick(); }
+    if (nextAt > Date.now()) { clearInterval(timer); timer = setInterval(tick, 1000); render(); }
     else unlock();
-    updatePaid();
   }
 
   function guestLast() {
@@ -349,14 +375,14 @@
   }
 
 
-  function spin(paid) {
+  function spin() {
     if (spinning || !prizes.length) return;
-    if (!paid && nextAt > Date.now()) return;
+    var paid = nextAt > Date.now();            // пока бесплатная на перезарядке, крутка идёт за баллы
     if (paid && !Ava.user) { Ava.openLogin(); return; }
     spinning = true;
     btn.disabled = true;
-    paidBtn.disabled = true;
-    (paid ? paidBtn : btn).textContent = 'Крутим…';
+    btn.className = paid ? 'paid-btn' : 'spin-btn';
+    btn.textContent = 'Крутим…';
     hideResult();
     var logged = !!Ava.user;
     if (logged) Ava.hold = true;       // баланс в шапке обновится после остановки ленты
@@ -389,7 +415,7 @@
     }, function (e) {
       Ava.release();
       afterSpin();
-      (paid ? paidBtn : btn).textContent = Ava.errText(e);
+      btn.className = paid ? 'paid-btn' : 'spin-btn'; btn.textContent = Ava.errText(e);
     });
   }
 
@@ -411,12 +437,16 @@
     stopPreview();
     invGrid.textContent = '';
     if (!Ava.user) {
+      owned = {}; markOwned();
       invTotal.textContent = '';
       invGrid.appendChild(el('div', 'inv-empty', 'Войдите в аккаунт, чтобы увидеть свой инвентарь.'));
       return;
     }
     Ava.call('my_inventory').then(function (inv) {
       invGrid.textContent = '';
+      owned = {};
+      inv.items.forEach(function (it) { if (it.count) owned[it.id] = true; });
+      markOwned();
       invTotal.textContent = inv.total + ' ' + plural(inv.total, 'предмет', 'предмета', 'предметов');
       if (!inv.total) invGrid.appendChild(el('div', 'inv-empty', 'Пока пусто. Покрутите рулетку, и предметы появятся здесь.'));
       inv.items.forEach(function (it) {
@@ -447,8 +477,7 @@
   // ===================== старт =====================
   Ava.mount($('accMount'), { showInfo: true });
   $('dropLogin').addEventListener('click', Ava.openLogin);
-  btn.addEventListener('click', function () { spin(false); });
-  paidBtn.addEventListener('click', function () { spin(true); });
+  btn.addEventListener('click', spin);
 
   var lastUserId = undefined;
   function updateSub() {

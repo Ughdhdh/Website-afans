@@ -5,16 +5,6 @@
 #adminBody { display: grid; gap: 22px; }
 #adminBody[hidden] { display: none; }
 
-.adm-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: end; }
-.adm-form label { display: grid; gap: 4px; font-size: 0.8rem; color: var(--muted); }
-.adm-form label.wide { grid-column: 1 / -1; }
-.adm-form label.chk { display: flex; align-items: center; gap: 8px; color: var(--txt); }
-.adm-form input:not([type="checkbox"]) {
-  padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: #0f0722; color: var(--txt); font: 0.95rem var(--font); outline: none;
-}
-.adm-form input:focus { border-color: var(--p2); }
-.adm-form input[type="checkbox"] { accent-color: var(--p2); width: 16px; height: 16px; }
-
 .adm-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: #0f0722; color: var(--txt); font-weight: 600; font-size: 0.82rem; cursor: pointer; }
 .adm-btn:hover:not(:disabled) { border-color: var(--p2); }
 .adm-btn:disabled { opacity: 0.5; cursor: default; }

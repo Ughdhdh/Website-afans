@@ -154,7 +154,7 @@ $$ select interval '2 hours' $$;
 
 -- Кулдаун бесплатной крутки у ПРЕМИУМ-аккаунта
 create or replace function public._premium_drop_cooldown() returns interval language sql immutable as
-$$ select interval '1 hour' $$;
+$$ select interval '45 minutes' $$;
 
 -- кулдаун крутки для конкретного игрока
 create or replace function public._drop_cd(p_premium boolean) returns interval language sql immutable as
@@ -183,14 +183,15 @@ $$ select exp(public._rk_growth() * greatest(p_secs, 0)) $$;
 alter table public.prizes alter column weight type numeric(10,2);   -- если таблица осталась от версии с целым шансом
 -- призы (названия и картинки взяты из вашей рулетки; шансы можно менять)
 insert into public.prizes (id, name, rarity, weight, img) values
-  (1, 'Летучка',     'common',    30, 'img/prizes/1.jpg'),
-  (2, 'Колоквиум',   'common',    25, 'img/prizes/2.jpg'),
-  (3, 'Контрольная', 'common',    25, 'img/prizes/3.jpg'),
-  (4, 'Нам бы...',   'rare',      10, 'img/prizes/4.jpg'),
-  (5, '7очка',       'epic',       7, 'img/prizes/5.jpg'),
-  (6, '9очка',       'legendary',  1.99, 'img/prizes/6.jpg'),
-  (7, 'ПаПа СтуЧАт', 'legendary',  1, 'img/prizes/7.jpg'),
-  (8, 'А. М. П.', 'mythic',     0.01, 'img/prizes/8.jpg')
+  (1, 'Летучка',          'common',       27,     'img/prizes/1.jpg'),
+  (2, 'Колоквиум',        'common',       25,     'img/prizes/2.jpg'),
+  (3, 'Контрольная',      'common',       25,     'img/prizes/3.jpg'),
+  (4, 'Нам бы...',        'rare',         10,     'img/prizes/4.jpg'),
+  (5, '7очка',            'epic',         7,      'img/prizes/5.jpg'),
+  (6, '9очка',            'legendary',    1.99,   'img/prizes/6.jpg'),
+  (7, 'ПаПа СтуЧАт',      'legendary',    1,      'img/prizes/7.jpg'),
+  (8, 'А. М. П.',         'mythic',       0.01,   'img/prizes/8.jpg'),
+  (9, 'Мистер Р.',        'legendary',    3,      'img/prizes/9.jpg')
 on conflict (id) do nothing;
 update public.prizes set rarity = 'mythic' where id = 8;      -- А. М. П. теперь мифический (+1.00 б.)
 
@@ -388,8 +389,8 @@ begin
   return (select json_build_object(
             'total', coalesce(sum(t.cnt), 0),
             'items', coalesce(json_agg(json_build_object('id', t.id, 'name', t.name, 'rarity', t.rarity,
-                                                         'img', t.img, 'count', t.cnt) order by t.id), '[]'::json))
-            from (select pr.id, pr.name, pr.rarity, pr.img, count(i.id) as cnt
+                                                         'img', t.img, 'count', t.cnt) order by t.weight desc, t.id), '[]'::json))
+            from (select pr.id, pr.name, pr.rarity, pr.img, pr.weight, count(i.id) as cnt
                     from public.prizes pr
                     left join public.inventory i on i.prize_id = pr.id and i.account_id = a.id
                    where pr.active or i.id is not null
@@ -490,7 +491,7 @@ begin
   if a.balance < amt then raise exception 'NO_FUNDS'; end if;
 
   u  := random();
-  cp := least(100, greatest(1.00, floor(95 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
+  cp := least(100, greatest(1.00, floor(98 / (1 - u)::numeric) / 100)); -- ~3% перевес «казино»
   insert into public.rocket_games (account_id, amount, auto_cashout, crash_point, start_at, crash_at)
   values (a.id, amt, au, cp, now(), now() + make_interval(secs => (ln(cp) / public._rk_growth())::double precision));
   perform public._credit(a.id, -amt, 'rocket:bet');

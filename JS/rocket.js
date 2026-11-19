@@ -21,7 +21,8 @@
   var $ = function (id) { return document.getElementById(id); };
   var stage = $('rkStage'), canvas = $('rkCanvas'), ctx = canvas.getContext('2d');
   var multEl = $('rkMult'), subEl = $('rkSub');
-  var histEl = $('rkHistory'), betsEl = $('rkBets'), msgEl = $('rkMsg');
+  var histEl = $('rkHistory'), betsEl = $('rkBets');
+  var msgText = '', msgIsInfo = false, msgTimer = null;
 
   var planeImg = new Image();
   planeImg.src = PLANE.src;
@@ -42,12 +43,17 @@
   function floor2(x) { return Math.floor(x * 100 + 1e-9) / 100; }
   var MAX_BET = 500;   // должно совпадать с public._max_bet() в SQL
   function fmt(n) { return Number(n).toFixed(2); }
-  var UNIT = ' б.';
+  var UNIT = '\u00a0б.';
   function serverNow() { return Date.now() + offset; }
 
   function setMsg(text, info) {
-    msgEl.textContent = text || '';
-    msgEl.style.color = info ? 'var(--muted)' : '';
+    clearTimeout(msgTimer);
+    msgText = text || '';
+    msgIsInfo = !!info;
+    if (msgText && !msgIsInfo) {
+      msgTimer = setTimeout(function () { setMsg(''); }, 3000);
+    }
+    if (panel) panel.force();
   }
   function load(key, def) { try { var v = localStorage.getItem(key); return v === null ? def : JSON.parse(v); } catch (e) { return def; } }
   function save(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
@@ -74,7 +80,7 @@
     var quick = el('div', 'quick');
     [['+0.01', 0.01], ['+0.02', 0.02], ['+0.05', 0.05], ['+0.10', 0.10]].forEach(function (q) {
       var b = el('button', '', q[0]); b.type = 'button';
-      b.addEventListener('click', function () { setAmt(readAmt() + q[1]); });
+      b.addEventListener('click', function () { clearErr(); setAmt(readAmt() + q[1]); });
       quick.appendChild(b);
     });
     box.appendChild(amount); box.appendChild(quick);
@@ -86,6 +92,9 @@
     inAuto.value = fmt(Math.max(1.5, Number(load('rk.autoval', 2)) || 2));
     cbAuto.checked = !!load('rk.auto', false);
 
+    function clearErr() {
+      if (msgText && !msgIsInfo) setMsg('');
+    }
     function readAmt() { var v = parseFloat(inAmt.value); return isFinite(v) ? v : 0; }
     function setAmt(v) {
       v = Math.min(MAX_BET, Math.max(0.01, Math.round(v * 100) / 100));
@@ -96,11 +105,16 @@
       var v = parseFloat(inAuto.value);
       return isFinite(v) ? Math.round(v * 100) / 100 : null;
     }
-    bMinus.addEventListener('click', function () { setAmt(readAmt() - 0.01); });
-    bPlus.addEventListener('click', function () { setAmt(readAmt() + 0.01); });
-    inAmt.addEventListener('change', function () { setAmt(readAmt() || 0.01); });
-    inAuto.addEventListener('change', function () { var v = Math.max(1.5, parseFloat(inAuto.value) || 2); inAuto.value = fmt(v); save('rk.autoval', v); });
-    cbAuto.addEventListener('change', function () { save('rk.auto', cbAuto.checked); });
+    bMinus.addEventListener('click', function () { clearErr(); setAmt(readAmt() - 0.01); });
+    bPlus.addEventListener('click', function () { clearErr(); setAmt(readAmt() + 0.01); });
+    inAmt.addEventListener('change', function () { clearErr(); setAmt(readAmt() || 0.01); });
+    inAuto.addEventListener('change', function () {
+      clearErr();
+      var v = Math.max(1.5, parseFloat(inAuto.value) || 2);
+      inAuto.value = fmt(v);
+      save('rk.autoval', v);
+    });
+    cbAuto.addEventListener('change', function () { clearErr(); save('rk.auto', cbAuto.checked); });
 
     go.addEventListener('click', function () {
       var v = view();
@@ -119,25 +133,32 @@
       var v = view();
       var flying = v.phase === 'flying';
       var live = flying && game && !game.demo ? fmt(floor2(game.amount * v.mult)) : '';
-      var key = [v.phase, live, busy ? 1 : 0, Ava.user ? 1 : 0, readAmt(), game && game.demo ? 'd' : ''].join('|');
+      var key = [v.phase, live, busy ? 1 : 0, Ava.user ? 1 : 0, readAmt(), game && game.demo ? 'd' : '', msgText, msgIsInfo ? 1 : 0].join('|');
       if (key === lastKey) return;
       lastKey = key;
 
       [inAmt, bMinus, bPlus, cbAuto, inAuto].forEach(function (n) { n.disabled = flying; });
       quick.querySelectorAll('button').forEach(function (b) { b.disabled = flying; });
 
+      if (msgText && !msgIsInfo) {
+        setBtn('err', 'Ошибка', msgText, busy);
+        return;
+      }
+
       if (flying) {
         setBtn('cash', 'Забрать', game.demo ? 'демо без ставки' : live + UNIT, busy);
       } else if (Ava.user) {
-        setBtn('', 'Запуск', 'ставка ' + fmt(readAmt()) + UNIT, busy);
+        var sub = msgIsInfo && msgText ? msgText : ('ставка ' + fmt(readAmt()) + UNIT);
+        setBtn('', 'Запуск', sub, busy);
       } else {
-        setBtn('', 'Демо-запуск', 'без ставки, баллы не тратятся', busy);
+        var demoSub = msgIsInfo && msgText ? msgText : 'без ставки, баллы не тратятся';
+        setBtn('', 'Демо-запуск', demoSub, busy);
       }
     }
     return { root: root, render: render, force: function () { lastKey = ''; render(); }, readAuto: readAuto };
   })();
   betsEl.appendChild(panel.root);
-
+  
   // ======================= игра =======================
   function mk(g) {
     return { id: g.id, status: g.status, amount: Number(g.amount), auto: g.auto === null || g.auto === undefined ? null : Number(g.auto),
@@ -189,7 +210,7 @@
   }
 
   function startDemo(auto) {
-    var cp = Math.min(100, Math.max(1.00, Math.floor(95 / (1 - Math.random())) / 100));
+    var cp = Math.min(100, Math.max(1.00, Math.floor(98 / (1 - Math.random())) / 100));
     resetFx();
     pokedAuto = false;
     game = { id: 'demo' + Date.now(), demo: true, status: 'active', start: Date.now(), crash_point: cp, amount: 0, auto: auto, mult: null, payout: 0 };
@@ -216,9 +237,8 @@
         resetFx(); game = mk(g); finishFx();
       }                                      // иначе это старая игра до открытия страницы: не показываем
     }
-    if (!Ava.user) setMsg('Войдите в аккаунт, чтобы играть на баллы. Демо-запуск доступен всем.', true);
-    else if (s.balance !== null && Number(s.balance) < 0.01 && (!game || game.status !== 'active')) setMsg('Баланс пуст. Покрутите рулетку выше, чтобы получить баллы.', true);
-    else if (msgEl.style.color) setMsg('');
+    if (!Ava.user) setMsg('Войдите в аккаунт, чтобы играть на баллы', true);
+    else if (msgIsInfo) setMsg('');
     panel.force();
   }
 

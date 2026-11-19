@@ -61,6 +61,7 @@
   font-variant-numeric: tabular-nums;
 }
 .ava-chip .ava-bal { background: #e6f3e6; border-radius: 0; }
+.ava-bal[role="button"] { cursor: pointer; user-select: none; -webkit-user-select: none; }
 
 .ava-btn {
   font-family: var(--a-font);

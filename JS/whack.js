@@ -20,7 +20,13 @@
   var gridEl = $('whGrid'), timerEl = $('whTimer'), turnEl = $('whTurn'), totalEl = $('whTotal');
   var startBtn = $('whStart'), cashBtn = $('whCash'), msgEl = $('whMsg');
   var overEl = $('whOver'), overTitle = $('whOverTitle'), overText = $('whOverText');
-  var UNIT = ' б.';
+  var UNIT = ' б.';
+
+  function setMsg(text, kind) {
+    if (!msgEl) return;
+    msgEl.textContent = text || '';
+    msgEl.className = 'wh-msg' + (kind ? ' ' + kind : '');
+  }
 
   var cells = [];                      // DOM-клетки
   var game = null;                     // {turn,total,canCash,cells,ms}
@@ -42,7 +48,6 @@
       if (!game && !demo) { setMsg(''); if (overTitle.textContent === 'Еноты отдыхают') showOver('Ударь енота', 'Нажмите «Играть». Еноты +0.01, Авакян −1.'); }
       paintButtons(); return;
     }
-    if (cooling()) setMsg('Следующая игра через ' + leftText());
     paintButtons();
   }
   // кулдаун из ответа сервера (next_at считается по часам сервера)
@@ -54,7 +59,6 @@
 
   function fmt(n) { return Number(n).toFixed(2); }
   function sgn(n) { return (n > 0 ? '+' : (n < 0 ? '−' : '')) + fmt(Math.abs(n)); }
-  function setMsg(t, kind) { msgEl.textContent = t || ''; msgEl.className = 'wh-msg' + (kind ? ' ' + kind : ''); }
 
   // ----- разметка поля -----
   for (var i = 0; i < 9; i++) {
@@ -90,14 +94,14 @@
   function paintStats() {
     turnEl.textContent = game ? (game.turn + 1) : 1;
     var t = game ? game.total : 0;
-    totalEl.textContent = (demo ? '' : '') + fmt(t) + UNIT + (demo ? ' (демо)' : '');
+    totalEl.textContent = fmt(t) + UNIT + (demo ? ' (демо)' : '');
     totalEl.className = t < 0 ? 'neg' : (t > 0 ? 'pos' : '');
   }
   function paintButtons() {
     var inGame = !!game;
     startBtn.hidden = inGame && !paused;
     startBtn.disabled = busy || cooling();
-    startBtn.textContent = paused ? 'Продолжить' : (cooling() ? 'Через ' + leftText() : (Ava.user ? 'Играть' : 'Демо-игра'));
+    startBtn.textContent = paused ? 'Продолжить' : (cooling() ? leftText() : (Ava.user ? 'Играть' : 'Демо-игра'));
     var can = inGame && !demo && game.canCash;
     cashBtn.hidden = !inGame || demo;
     cashBtn.disabled = busy || !can || cashPending;
@@ -187,7 +191,7 @@
       busy = false;
       setMsg(Ava.errText(e), 'bad');
       if (e.message === 'NO_GAME') { gameOver('Игра закончилась', Ava.errText(e)); return; }
-      game = game; paused = true; paintButtons(); showOver('Связь прервалась', 'Нажмите «Продолжить».');
+      paused = true; paintButtons(); showOver('Связь прервалась', 'Нажмите «Продолжить».');
     });
   }
 
@@ -212,6 +216,7 @@
   // ----- кнопки -----
   function begin() {
     if (busy || cooling()) return;
+    setMsg('');
     if (!Ava.user) {                // демо для гостей
       demo = true; game = { turn: 0, total: 0, canCash: false };
       startRound(demoCells(0), demoMs(0), demoMs(0));
@@ -282,7 +287,7 @@
         game = { turn: s.game.turn, total: Number(s.game.total), canCash: !!s.game.can_cash };
         paused = true; paintStats(); paintButtons();
         showOver('Игра не закончена', 'Ход ' + (s.game.turn + 1) + ', в игре ' + fmt(s.game.total) + UNIT + '. Нажмите «Продолжить».');
-      } else if (s.next_at) { setCooldown(s); showOver('Еноты отдыхают', 'Следующая игра станет доступна после кулдауна (таймер внизу).'); }
+      } else if (s.next_at) { setCooldown(s); showOver('Еноты отдыхают', 'Следующая игра станет доступна после кулдауна.'); }
       else { showOver('Ударь енота', 'Нажмите «Играть». Еноты +0.01, Авакян −1.'); paintButtons(); }
     }, function () { showOver('Ударь енота', 'Нажмите «Играть».'); paintButtons(); });
   });

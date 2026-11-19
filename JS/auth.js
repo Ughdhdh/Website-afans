@@ -160,6 +160,7 @@
   // баланс обновился (после крутки, ставки и т.п.)
   // Пока идёт анимация рулетки, новый баланс придерживается (hold), чтобы не раскрыть приз раньше времени
   var pendingBalance = null;
+  var balHidden = lsGet('ava.bal_hidden') === '1';
   Ava.hold = false;
   Ava.setBalance = function (b) {
     if (!Ava.user) return;
@@ -277,8 +278,19 @@ Ava.mount = function (el, opts) {
       name.className = 'ava-name' + (u.premium ? ' prem' : ''); name.textContent = u.name;
       if (u.premium) { var st = document.createElement('i'); st.className = 'prem-star'; st.textContent = '\u2605'; st.title = 'Премиум'; name.appendChild(document.createTextNode(' ')); name.appendChild(st); }
       var bal = document.createElement('span');
-      bal.className = 'ava-bal'; bal.textContent = Ava.fmt(u.balance) + '\u00a0б.';
-      bal.title = 'Баланс в баллах (б.)';
+      bal.className = 'ava-bal'; bal.setAttribute('role', 'button'); bal.tabIndex = 0;
+      function paintBal() {
+        bal.textContent = balHidden ? '\u2022\u2022\u2022 б.' : Ava.fmt(Ava.user ? Ava.user.balance : u.balance) + '\u00a0б.';
+        bal.title = balHidden ? 'Показать баланс' : 'Баланс в баллах (б.). Нажмите, чтобы скрыть';
+      }
+      function flipBal() {
+        balHidden = !balHidden;
+        lsSet('ava.bal_hidden', balHidden ? '1' : '0');
+        paintBal();
+      }
+      bal.addEventListener('click', flipBal);
+      bal.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipBal(); } });
+      paintBal();
       el.appendChild(name); el.appendChild(bal);
     }
 
