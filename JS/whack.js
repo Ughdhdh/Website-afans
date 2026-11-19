@@ -212,7 +212,6 @@
   // ----- кнопки -----
   function begin() {
     if (busy || cooling()) return;
-    setMsg('');
     if (!Ava.user) {                // демо для гостей
       demo = true; game = { turn: 0, total: 0, canCash: false };
       startRound(demoCells(0), demoMs(0), demoMs(0));
