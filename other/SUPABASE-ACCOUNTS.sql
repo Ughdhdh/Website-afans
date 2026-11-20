@@ -183,15 +183,22 @@ $$ select exp(public._rk_growth() * greatest(p_secs, 0)) $$;
 alter table public.prizes alter column weight type numeric(10,2);   -- если таблица осталась от версии с целым шансом
 -- призы (названия и картинки взяты из вашей рулетки; шансы можно менять)
 insert into public.prizes (id, name, rarity, weight, img) values
-  (1, 'Летучка',          'common',       27,     'img/prizes/1.jpg'),
-  (2, 'Колоквиум',        'common',       25,     'img/prizes/2.jpg'),
-  (3, 'Контрольная',      'common',       25,     'img/prizes/3.jpg'),
-  (4, 'Нам бы...',        'rare',         10,     'img/prizes/4.jpg'),
-  (5, '7очка',            'epic',         7,      'img/prizes/5.jpg'),
-  (6, '9очка',            'legendary',    1.99,   'img/prizes/6.jpg'),
+  (1, 'Летучка',          'common',       17,     'img/prizes/1.jpg'),
+  (2, 'Колоквиум',        'common',       15,     'img/prizes/2.jpg'),
+  (3, 'Контрольная',      'common',       14,     'img/prizes/3.jpg'),
+  (4, 'Нам бы...',        'rare',         9,     'img/prizes/4.jpg'),
+  (5, '7очка',            'epic',         5,      'img/prizes/5.jpg'),
+  (6, '9очка',            'legendary',    1.98,   'img/prizes/6.jpg'),
   (7, 'ПаПа СтуЧАт',      'legendary',    1,      'img/prizes/7.jpg'),
   (8, 'А. М. П.',         'mythic',       0.01,   'img/prizes/8.jpg'),
-  (9, 'Мистер Р.',        'legendary',    3,      'img/prizes/9.jpg')
+  (9, 'Мистер Р.',        'legendary',    2,      'img/prizes/9.jpg'),
+  (10, 'Инженера',        'rare',         8.5,    'img/prizes/10.jpg'),
+  (11, 'Ремень Бобрика',  'rare',         8,      'img/prizes/11.jpg'),
+  (12, 'Муумба',          'epic',         4,      'img/prizes/12.jpg'),
+  (13, 'Лось от Авакяна', 'epic',         5.5,    'img/prizes/13.jpg'),
+  (14, 'Бееее',           'rare',         9,      'img/prizes/14.jpg'),
+  (15, 'Колхозник',       'mythic',       0.01,   'img/prizes/15.jpg')
+
 on conflict (id) do nothing;
 update public.prizes set rarity = 'mythic' where id = 8;      -- А. М. П. теперь мифический (+1.00 б.)
 
