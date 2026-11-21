@@ -11,10 +11,11 @@
       prize: function (p) { return 'sounds/prize-' + p.id + '.wav'; },  // у каждого предмета свой: prize-1.wav ... prize-7.wav
       prizeDelay: 300       // мс: звук приза играет после появления результата в окне (оно проявляется 0.5 с)
     },
-    // Видео-эффект для легендарных предметов (WebM с прозрачным фоном), например 'img/fx/legendary.webm'.
-    // Пусто или файла нет, тогда играет анимация-взрыв.
-    legendaryVideo: '',
-    legendaryVideoFallback: ''      // необязательно: запасной файл для Safari, например 'img/fx/legendary.mov' (HEVC с альфа-каналом)
+    // Видео-эффект ТОЛЬКО для мифических предметов (у легендарных обычная анимация-взрыв).
+    // Пусто или файла нет, тогда вместо видео играет анимация-взрыв.
+    // Сейчас лежит чёрная заглушка: замените файлы img/fx/mythic.webm и img/fx/mythic.mp4 своими.
+    mythicVideo: 'img/fx/mythic.webm',
+    mythicVideoFallback: 'img/fx/mythic.mp4'      // запасной файл для Safari/iOS (H.264)
   };
   // =====================================================================
 
@@ -129,20 +130,20 @@
   // ===================== эффект для легендарных =====================
   var fxRunning = false;
 
-  function legendaryFx() {
+  function legendaryFx(rarity) {
     panel.classList.remove('shake'); void panel.offsetWidth; panel.classList.add('shake');
     setTimeout(function () { panel.classList.remove('shake'); }, 700);
-    if (CONFIG.legendaryVideo) playVideoFx(); else explosion();
+    if (rarity === 'mythic' && CONFIG.mythicVideo) playVideoFx(); else explosion();   // видео только у мифических
   }
 
   function playVideoFx() {
     video.textContent = '';
     var s1 = document.createElement('source');
-    s1.src = CONFIG.legendaryVideo;
+    s1.src = CONFIG.mythicVideo;
     video.appendChild(s1);
-    if (CONFIG.legendaryVideoFallback) {
+    if (CONFIG.mythicVideoFallback) {
       var s2 = document.createElement('source');
-      s2.src = CONFIG.legendaryVideoFallback;
+      s2.src = CONFIG.mythicVideoFallback;
       video.appendChild(s2);
     }
     video.hidden = false;
@@ -150,7 +151,7 @@
     function fallback() { if (fell) return; fell = true; video.hidden = true; explosion(); }
     video.onended = function () { video.hidden = true; };
     video.onerror = fallback;
-    s1.addEventListener('error', function () { if (!CONFIG.legendaryVideoFallback) fallback(); });
+    s1.addEventListener('error', function () { if (!CONFIG.mythicVideoFallback) fallback(); });
     video.load();
     var pr = video.play();
     if (pr && pr.catch) pr.catch(fallback);
@@ -255,8 +256,10 @@
   // ===================== кулдаун и кнопки =====================
   function myCooldown() { return Ava.user && Ava.user.premium ? cfg.premium_cooldown_ms : cfg.cooldown_ms; }
   function hoursText() {
-    var h = myCooldown() / 3600000;
-    return Number.isInteger(h) ? String(h) : h.toFixed(1);
+    var ms = myCooldown();
+    if (ms < 3600000) return Math.round(ms / 60000) + ' мин';           // меньше часа: в минутах
+    var h = ms / 3600000;
+    return (Number.isInteger(h) ? String(h) : h.toFixed(1)) + ' ч';
   }
   // Одна кнопка на два режима:
   //  - бесплатная доступна: золотая «Крутить бесплатно»;
@@ -398,7 +401,7 @@
       animateTo(res.prize, function () {
         showResult(res.prize, logged);
         setTimeout(function () { play(CONFIG.sounds.prize(res.prize)); }, CONFIG.sounds.prizeDelay);   // после анимации появления
-        if (res.prize.rarity === 'legendary' || res.prize.rarity === 'mythic') legendaryFx();
+        if (res.prize.rarity === 'legendary' || res.prize.rarity === 'mythic') legendaryFx(res.prize.rarity);
         if (logged) {
           Ava.setBalance(res.balance);
           Ava.release();
@@ -482,7 +485,7 @@
   var lastUserId = undefined;
   function updateSub() {
     if (!cfg) return;
-    sub.textContent = 'Бесплатная крутка раз в ' + hoursText() + ' ч' + (Ava.user && Ava.user.premium ? ' (премиум)' : '') + '. Предметы падают в инвентарь, за каждый начисляются баллы.';
+    sub.textContent = 'Бесплатная крутка раз в ' + hoursText() + (Ava.user && Ava.user.premium ? ' (премиум)' : '') + '. Предметы падают в инвентарь, за каждый начисляются баллы.';
   }
   Ava.onChange(function (u) {
     updatePaid(); updateSub();                              // баланс мог измениться

@@ -52,9 +52,6 @@ a { color: var(--p3); }
 .brand-face { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)); }
 .brand-name { font-size: 1.25rem; font-weight: 800; font-style: italic; letter-spacing: 0.5px; }
 .brand-name b, .drop-title b { font-weight: 900; background: linear-gradient(90deg, var(--p2), var(--p3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.top-nav { display: flex; gap: 4px; margin-left: 8px; }
-.top-nav a { padding: 7px 12px; border-radius: 8px; text-decoration: none; color: var(--muted); font-weight: 600; font-size: 0.95rem; }
-.top-nav a:hover { color: var(--txt); background: rgba(168, 85, 247, 0.15); }
 .top-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
 .back { color: var(--muted); font-size: 0.85rem; text-decoration: none; white-space: nowrap; }
 .back:hover { color: var(--txt); }
@@ -62,7 +59,7 @@ a { color: var(--p3); }
 /* виджет аккаунта в шапке */
 #accMount .ava-acc { font-size: 0.9rem; color: var(--txt); }
 #accMount .ava-bal { background: rgba(251, 191, 36, 0.15); color: var(--gold); font-weight: 700; }
-#accMount .ava-btn { border-radius: 8px; padding: 7px 14px; font-weight: 600; }
+#accMount .ava-btn { border-radius: 8px; padding: 5px 14px; font-weight: 600; }
 #accMount .ava-btn-main { background: linear-gradient(135deg, var(--p1), var(--p2)); border: none; }
 
 main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid; gap: 22px; }
@@ -159,7 +156,7 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 .snd-btn { margin-left: auto; padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(233, 213, 255, 0.4); background: rgba(0, 0, 0, 0.25); color: #e9d5ff; font-size: 1rem; cursor: pointer; }
 .snd-btn:hover { background: rgba(0, 0, 0, 0.45); }
 .drop-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 7; pointer-events: none; }
-.drop-fxvideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 6; pointer-events: none; background: transparent; }
+.drop-fxvideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 6; pointer-events: none; background: transparent; }
 .drop-fxvideo[hidden] { display: none; }
 .drop.shake { animation: shake 0.6s cubic-bezier(.36, .07, .19, .97); }
 @keyframes shake {
@@ -248,7 +245,6 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 /* ---------- телефоны ---------- */
 @media (max-width: 760px) {
   .top { flex-wrap: wrap; padding: 8px 12px; gap: 8px 12px; }
-  .top-nav { order: 3; width: 100%; margin: 0; overflow-x: auto; }
   .top-right { gap: 10px; flex-wrap: wrap; }
   .drop { padding: 12px; }
   .drop-face { height: 120px; }
@@ -365,5 +361,58 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 .prem-star { font-style: normal; color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.9); }
 #accMount .ava-name.prem { text-shadow: 0 0 10px rgba(251, 191, 36, 0.95), 0 0 22px rgba(251, 191, 36, 0.6); }
 
+/* ===== шапка AvakyanDrop =====
+   Широкий экран: 1) лого/название слева, аккаунт и «← Фанклуб» справа; 2) ссылки-якоря.
+   Узкий экран:   1) лого/название слева и «← Фанклуб» справа; 2) имя слева, баланс/админка/выйти справа; 3) ссылки-якоря. */
+.top-drop {
+  display: grid; align-items: center; gap: 4px 18px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "brand acc back" "nav nav nav";
+}
+.top-drop .brand { grid-area: brand; min-width: 0; }
+.top-drop #accMount { grid-area: acc; justify-self: end; min-width: 0; }
+.top-drop .back { grid-area: back; }
+.top-drop #accMount .ava-name { margin-right: auto; }
 
-.top-nav a { white-space: nowrap; }
+@media (max-width: 820px) {
+  .top-drop {
+    padding: 8px 12px; gap: 6px 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand back" "acc acc" "nav nav";
+  }
+  .top-drop #accMount { justify-self: stretch; flex-wrap: nowrap; gap: 6px; }
+  .top-drop #accMount .ava-btn-main { margin-left: auto; }     /* гость: «Войти» справа */
+  /* длинное имя переносится внутри своей области, кнопки справа остаются на месте и в одну строку */
+  .top-drop #accMount { align-items: center; }
+  .top-drop #accMount .ava-name { flex: 1 1 0; min-width: 3.2em; margin-right: 0; white-space: normal; overflow-wrap: break-word; line-height: 1.2; margin-left: 1.5%;}
+  .top-drop #accMount .ava-bal, .top-drop #accMount .ava-btn { flex: 0 0 auto; white-space: nowrap; }
+  .top-drop #accMount .ava-btn { padding: 6px 11px; }
+}
+
+/* ===== узкие телефоны: заголовок и окно результата не должны обрезаться ===== */
+.drop-head { min-width: 0; }
+.drop-result { padding: 0 12px; box-sizing: border-box; }
+.drop-result .pic { flex: 0 0 auto; }
+.drop-result .txt { min-width: 0; }
+@media (max-width: 760px) {
+  .drop-title { font-size: clamp(1.2rem, calc((100vw - 175px) / 8.2), 1.9rem); }
+  .drop-result .pic { width: 72px; height: 72px; }
+  .drop-result .txt em { font-size: 0.85rem; }
+  .drop-result .txt strong { overflow-wrap: anywhere; }
+}
+
+
+/* ===== боковые отступы на очень узких экранах =====
+   Поменяйте --pad-x, чтобы изменить отступ слева и справа (страница и шапка). */
+@media (max-width: 400px) {
+  :root { --pad-x: 20px; }
+  main { padding-left: var(--pad-x); padding-right: var(--pad-x); }
+  .top-drop { padding-left: var(--pad-x); padding-right: var(--pad-x); }
+  .top-drop #accMount { font-size: 0.8rem; }
+}
+
+@media (max-width: 360px) {
+  .top-drop #accMount { gap: 4px; }
+  .top-drop #accMount .ava-bal { padding: 2px 6px; }
+  .top-drop #accMount .ava-btn { padding: 6px 8px; }
+}

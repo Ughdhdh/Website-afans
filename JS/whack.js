@@ -196,7 +196,6 @@
   }
 
   function afterTurn(g, last) {
-    var prev = game ? game.turn : 0;
     game = g;                       // сервер знает точный итог
     if (last) {
       var t = 'Ход ' + g.turn + ': ' + sgn(last.delta) + UNIT;

@@ -556,28 +556,6 @@ begin
             from public.accounts ac);
 end $$;
 
-create or replace function public.admin_create_account(p_token text, p_login text, p_password text,
-                                                       p_name text, p_note text default null,
-                                                       p_approve boolean default false) returns json
-language plpgsql security definer set search_path = public, extensions as $$
-declare lg text := btrim(coalesce(p_login, '')); nm text := btrim(coalesce(p_name, '')); id bigint; cname text;
-begin
-  perform public._admin(p_token);
-  if char_length(lg) < 3 or char_length(lg) > 80 then raise exception 'BAD_LOGIN'; end if;
-  if char_length(nm) < 1 or char_length(nm) > 30 then raise exception 'BAD_NAME'; end if;
-  if char_length(coalesce(p_password, '')) < 4 or octet_length(p_password) > 72 then raise exception 'BAD_PASSWORD'; end if;
-  begin
-    insert into public.accounts (login, display_name, pass_hash, status, note)
-    values (lg, nm, crypt(p_password, gen_salt('bf', 10)),
-            case when p_approve then 'approved' else 'pending' end, nullif(btrim(coalesce(p_note, '')), ''))
-    returning accounts.id into id;
-  exception when unique_violation then
-    get stacked diagnostics cname = constraint_name;
-    if cname = 'accounts_login_uq' then raise exception 'LOGIN_TAKEN'; else raise exception 'NAME_TAKEN'; end if;
-  end;
-  return json_build_object('ok', true, 'id', id);
-end $$;
-
 create or replace function public.admin_set_status(p_token text, p_id bigint, p_status text) returns json
 language plpgsql security definer set search_path = public, extensions as $$
 declare a public.accounts;
@@ -895,7 +873,7 @@ revoke all on function
   public.whack_state(text), public.whack_start(text), public.whack_turn(text, int[]), public.whack_cashout(text),
   public.ref_info(text), public.ref_set(text, text),
   public.forum_post(text, text),
-  public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
+  public.admin_list_accounts(text),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
   public.admin_adjust_balance(text, bigint, numeric, text), public.admin_set_premium(text, bigint, boolean)
   from public;
@@ -907,7 +885,7 @@ grant execute on function
   public.whack_state(text), public.whack_start(text), public.whack_turn(text, int[]), public.whack_cashout(text),
   public.ref_info(text), public.ref_set(text, text),
   public.forum_post(text, text),
-  public.admin_list_accounts(text), public.admin_create_account(text, text, text, text, text, boolean),
+  public.admin_list_accounts(text),
   public.admin_set_status(text, bigint, text), public.admin_reset_password(text, bigint, text),
   public.admin_adjust_balance(text, bigint, numeric, text), public.admin_set_premium(text, bigint, boolean)
   to anon, authenticated;
