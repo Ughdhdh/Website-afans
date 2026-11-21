@@ -157,6 +157,9 @@ main { max-width: 980px; margin: 0 auto; padding: 22px 16px 10px; display: grid;
 .snd-btn:hover { background: rgba(0, 0, 0, 0.45); }
 .drop-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 7; pointer-events: none; }
 .drop-fxvideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 6; pointer-events: none; background: transparent; }
+/* iOS: само видео играет невидимым, а картинка с прозрачным чёрным рисуется в canvas (mix-blend-mode на video в Safari ненадёжен) */
+.drop-fxvideo.src-hidden { opacity: 0.01; mix-blend-mode: normal; }
+#dropVideoCv.drop-fxvideo { mix-blend-mode: normal; }
 /* чёрный фон видео становится прозрачным (режим screen): видео с огнём/светом на ЧЁРНОМ фоне ложится поверх страницы без альфа-канала */
 .drop-fxvideo { mix-blend-mode: screen; }
 .drop-fxvideo[hidden] { display: none; }
