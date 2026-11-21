@@ -32,7 +32,8 @@
   var panel = $('roulette'), win = $('dropWindow'), track = $('dropTrack'), result = $('dropResult');
   var btn = $('dropBtn'), sub = $('dropSub'), timerEl = null;
   var guestWarn = $('dropGuest'), legend = $('dropLegend'), sndBtn = $('dropSound'), skipBtn = $('dropSkip');
-  var fx = $('dropFx'), video = $('dropVideo');
+  var fx = $('dropFx'), video = $('dropVideo'), videoCv = $('dropVideoCv');
+  var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var invGrid = $('invGrid'), invTotal = $('invTotal');
 
   var cfg = { cooldown_ms: 2 * 3600 * 1000, premium_cooldown_ms: 3600 * 1000, paid_cost: 0.05 };   // уточняется с сервера (drop_config)
@@ -133,28 +134,51 @@
   function legendaryFx(rarity) {
     panel.classList.remove('shake'); void panel.offsetWidth; panel.classList.add('shake');
     setTimeout(function () { panel.classList.remove('shake'); }, 700);
-    if (rarity === 'mythic' && CONFIG.mythicVideo) playVideoFx(); else explosion();   // видео только у мифических
+    if (rarity === 'mythic' && CONFIG.mythicVideo) playVideoFx(); else if (rarity !== 'mythic') explosion();   // мифические: только видео, легендарные: взрыв
   }
 
   function playVideoFx() {
     video.textContent = '';
-    var s1 = document.createElement('source');
-    s1.src = CONFIG.mythicVideo;
-    video.appendChild(s1);
-    if (CONFIG.mythicVideoFallback) {
-      var s2 = document.createElement('source');
-      s2.src = CONFIG.mythicVideoFallback;
-      video.appendChild(s2);
+    // на iOS сначала MP4 (H.264): WebM там поддерживается не везде
+    var urls = IOS && CONFIG.mythicVideoFallback ? [CONFIG.mythicVideoFallback, CONFIG.mythicVideo] : [CONFIG.mythicVideo, CONFIG.mythicVideoFallback];
+    var s1;
+    urls.forEach(function (u, i) {
+      if (!u) return;
+      var s = document.createElement('source'); s.src = u; video.appendChild(s); if (!s1) s1 = s;
+    });
+    video.muted = true; video.defaultMuted = true; video.playsInline = true;
+    video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
+    var fell = false, cv = null;
+    function done() { video.hidden = true; videoCv.hidden = true; video.classList.remove('src-hidden'); }
+    function fallback(e) { if (fell) return; fell = true; done(); if (window.console) console.warn('Видео мифической не сработало:', e && (e.message || e.name || e.type) || e); }   // без запасного взрыва
+    // iOS: рисуем кадры в canvas, а чёрный делаем прозрачным (яркость -> альфа)
+    function startCanvas() {
+      var w = 640, h = Math.max(1, Math.round(w * (video.videoHeight || 640) / (video.videoWidth || 1920)));
+      videoCv.width = w; videoCv.height = h;
+      var c = videoCv.getContext('2d', { willReadFrequently: true });
+      videoCv.hidden = false;
+      (function draw() {
+        if (video.ended || video.hidden) { done(); return; }
+        try {
+          c.drawImage(video, 0, 0, w, h);
+          var d = c.getImageData(0, 0, w, h), a = d.data;
+          for (var i = 0; i < a.length; i += 4) {
+            var m = a[i]; if (a[i + 1] > m) m = a[i + 1]; if (a[i + 2] > m) m = a[i + 2];
+            if (m > 0) { a[i] = Math.min(255, a[i] * 255 / m); a[i + 1] = Math.min(255, a[i + 1] * 255 / m); a[i + 2] = Math.min(255, a[i + 2] * 255 / m); }
+            a[i + 3] = m;
+          }
+          c.putImageData(d, 0, 0);
+        } catch (e) { fallback(); return; }
+        requestAnimationFrame(draw);
+      })();
     }
     video.hidden = false;
-    var fell = false;
-    function fallback() { if (fell) return; fell = true; video.hidden = true; explosion(); }
-    video.onended = function () { video.hidden = true; };
+    if (IOS) video.classList.add('src-hidden');
+    video.onended = done;
     video.onerror = fallback;
-    s1.addEventListener('error', function () { if (!CONFIG.mythicVideoFallback) fallback(); });
     video.load();
     var pr = video.play();
-    if (pr && pr.catch) pr.catch(fallback);
+    if (pr && pr.then) pr.then(function () { if (IOS) startCanvas(); }, fallback); else if (IOS) startCanvas();
   }
 
   // запасной (и стандартный) вариант: взрыв из искр + ударная волна + вспышка
